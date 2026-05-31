@@ -33,10 +33,7 @@ import 'models.dart';
 
 typedef ParamsMap = Map<String, List<ConstructorParam>>;
 
-const _mandatoryImports = [
-  "import 'package:flutter/material.dart';",
-  "import 'package:change_case/change_case.dart';",
-];
+const _mandatoryImports = ["import 'package:flutter/material.dart';"];
 
 String generateRouterExtension(
   List<RouterNode> nodes, {
@@ -117,15 +114,16 @@ void _writeViewGo(StringBuffer buf, RouterViewNode node, {required String indent
 void _writeViewGetter(StringBuffer buf, RouterViewNode node, {required String indent}) {
   final getterName = _viewGetterName(node.widgetType);
 
+  final routeName = "'${node.widgetType.toSnakeCase()}'";
   if (node.hasParams) {
     buf.writeln(
       '${indent}GoRouterParams<${node.widgetType}, ${node.paramsType}> get $getterName => '
-      'GoRouterParams<${node.widgetType}, ${node.paramsType}>((params, r) => _context.go<${node.widgetType}, ${node.paramsType}>(queryParameters: params, replace: r));',
+      'GoRouterParams<${node.widgetType}, ${node.paramsType}>((params, r) => _context.go<${node.widgetType}, ${node.paramsType}>(queryParameters: params, replace: r), $routeName);',
     );
   } else {
     buf.writeln(
       '${indent}GoRouter<${node.widgetType}> get $getterName => '
-      'GoRouter<${node.widgetType}>((r) => _context.go<${node.widgetType}, Null>(replace: r));',
+      'GoRouter<${node.widgetType}>((r) => _context.go<${node.widgetType}, Null>(replace: r), $routeName);',
     );
   }
 }
@@ -168,17 +166,17 @@ List<RouterNode> _mergeGroupNodes(List<RouterNode> nodes) {
 void _writeGoRouterClasses(StringBuffer buf) {
   buf.writeln('class GoRouter<T> {');
   buf.writeln('  final void Function(bool) _onNavigate;');
-  buf.writeln('  GoRouter(this._onNavigate);');
+  buf.writeln('  final String name;');
+  buf.writeln('  GoRouter(this._onNavigate, this.name);');
   buf.writeln('  void go({bool replace = false}) => _onNavigate(replace);');
-  buf.writeln('  String get name => T.toString().toSnakeCase();');
   buf.writeln('}');
   buf.writeln();
 
   buf.writeln('class GoRouterParams<T, P extends Object?> {');
   buf.writeln('  final void Function(P, bool) _onNavigate;');
-  buf.writeln('  GoRouterParams(this._onNavigate);');
+  buf.writeln('  final String name;');
+  buf.writeln('  GoRouterParams(this._onNavigate, this.name);');
   buf.writeln('  void go(P params, {bool replace = false}) => _onNavigate(params, replace);');
-  buf.writeln('  String get name => T.toString().toSnakeCase();');
   buf.writeln('}');
   buf.writeln();
 }

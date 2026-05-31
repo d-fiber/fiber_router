@@ -98,7 +98,19 @@ bool _fileContainsBuildContextExtension(String filePath) {
   final file = File(filePath);
   if (!file.existsSync()) return false;
   final content = file.readAsStringSync();
-  return content.contains('on BuildContext');
+  if (content.contains('on BuildContext')) return true;
+
+  final exportMatches = RegExp(r'''export\s+['"]([^'"]+)['"]''').allMatches(content);
+  for (final m in exportMatches) {
+    final exportUri = m.group(1)!;
+    if (exportUri.startsWith('dart:') || exportUri.startsWith('package:')) continue;
+    final exportPath = p.normalize(p.join(p.dirname(filePath), exportUri));
+    final exportFile = File(exportPath);
+    if (!exportFile.existsSync()) continue;
+    if (exportFile.readAsStringSync().contains('on BuildContext')) return true;
+  }
+
+  return false;
 }
 
 bool _fileContainsAnyType(String filePath, Set<String> types) {
