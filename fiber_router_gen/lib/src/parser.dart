@@ -90,8 +90,15 @@ List<String> filterImports(List<String> imports, Set<String> neededTypes, String
     final resolvedPath = _resolveUri(uri, routerFilePath, packageConfig);
     if (resolvedPath == null) return true;
 
-    return _fileContainsAnyType(resolvedPath, neededTypes);
+    return _fileContainsAnyType(resolvedPath, neededTypes) || _fileContainsBuildContextExtension(resolvedPath);
   }).toList();
+}
+
+bool _fileContainsBuildContextExtension(String filePath) {
+  final file = File(filePath);
+  if (!file.existsSync()) return false;
+  final content = file.readAsStringSync();
+  return content.contains('on BuildContext');
 }
 
 bool _fileContainsAnyType(String filePath, Set<String> types) {
@@ -121,7 +128,6 @@ bool _fileContainsAnyType(String filePath, Set<String> types) {
 
 String? _resolveUri(String uri, String routerFilePath, Map<String, String> packageConfig) {
   if (!uri.startsWith('package:')) {
-    // Relative import.
     return p.normalize(p.join(p.dirname(routerFilePath), uri));
   }
 

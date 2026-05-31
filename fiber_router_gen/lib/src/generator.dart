@@ -33,7 +33,10 @@ import 'models.dart';
 
 typedef ParamsMap = Map<String, List<ConstructorParam>>;
 
-const _mandatoryImports = ["import 'package:flutter/material.dart';"];
+const _mandatoryImports = [
+  "import 'package:flutter/material.dart';",
+  "import 'package:change_case/change_case.dart';",
+];
 
 String generateRouterExtension(
   List<RouterNode> nodes, {
@@ -75,6 +78,7 @@ void _writeClass(StringBuffer buf, String className, List<RouterNode> nodes, {Ro
 
   if (main != null) {
     _writeViewGo(buf, main, indent: '  ');
+    buf.writeln("  String get name => '${main.widgetType.toSnakeCase()}';");
     buf.writeln();
   }
 
@@ -90,7 +94,7 @@ void _writeMember(StringBuffer buf, RouterNode node) {
   switch (node) {
     case RouterGroupNode(:final name):
       final cls = _groupClassName(name);
-      buf.writeln('  $cls get $name => $cls(_context);');
+      buf.writeln('  $cls get ${name.toCamelCase()} => $cls(_context);');
     case RouterViewNode():
       _writeViewGetter(buf, node, indent: '  ');
   }
@@ -115,13 +119,13 @@ void _writeViewGetter(StringBuffer buf, RouterViewNode node, {required String in
 
   if (node.hasParams) {
     buf.writeln(
-      '${indent}GoRouterParams<${node.paramsType}> get $getterName => '
-      'GoRouterParams<${node.paramsType}>((params, r) => _context.go<${node.widgetType}, ${node.paramsType}>(queryParameters: params, replace: r));',
+      '${indent}GoRouterParams<${node.widgetType}, ${node.paramsType}> get $getterName => '
+      'GoRouterParams<${node.widgetType}, ${node.paramsType}>((params, r) => _context.go<${node.widgetType}, ${node.paramsType}>(queryParameters: params, replace: r));',
     );
   } else {
     buf.writeln(
-      '${indent}GoRouter get $getterName => '
-      'GoRouter((r) => _context.go<${node.widgetType}, Null>(replace: r));',
+      '${indent}GoRouter<${node.widgetType}> get $getterName => '
+      'GoRouter<${node.widgetType}>((r) => _context.go<${node.widgetType}, Null>(replace: r));',
     );
   }
 }
@@ -162,17 +166,19 @@ List<RouterNode> _mergeGroupNodes(List<RouterNode> nodes) {
 }
 
 void _writeGoRouterClasses(StringBuffer buf) {
-  buf.writeln('class GoRouter {');
+  buf.writeln('class GoRouter<T> {');
   buf.writeln('  final void Function(bool) _onNavigate;');
   buf.writeln('  GoRouter(this._onNavigate);');
   buf.writeln('  void go({bool replace = false}) => _onNavigate(replace);');
+  buf.writeln('  String get name => T.toString().toSnakeCase();');
   buf.writeln('}');
   buf.writeln();
 
-  buf.writeln('class GoRouterParams<P extends Object?> {');
+  buf.writeln('class GoRouterParams<T, P extends Object?> {');
   buf.writeln('  final void Function(P, bool) _onNavigate;');
   buf.writeln('  GoRouterParams(this._onNavigate);');
   buf.writeln('  void go(P params, {bool replace = false}) => _onNavigate(params, replace);');
+  buf.writeln('  String get name => T.toString().toSnakeCase();');
   buf.writeln('}');
   buf.writeln();
 }
@@ -226,7 +232,10 @@ void _writeParamsClass(StringBuffer buf, String className, List<ConstructorParam
 
 String _groupClassName(String nodeName) => 'ContextRouter${nodeName.toPascalCase()}';
 
-String _viewGetterName(String widgetType) => widgetType.toCamelCase();
+String _viewGetterName(String widgetType) {
+  final name = widgetType.endsWith('View') ? widgetType.substring(0, widgetType.length - 4) : widgetType;
+  return name.toCamelCase();
+}
 
 String _toQueryExpr(ConstructorParam p) {
   final baseType = p.type.replaceAll('?', '');
