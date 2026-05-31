@@ -74,38 +74,90 @@ List<String> extractImports(String source) {
   return result.unit.directives.whereType<ImportDirective>().map((d) => d.toSource()).toList();
 }
 
-/// Filters [imports] to only those that are actually needed by [neededTypes].
-///
-/// - Always excludes `fiber_router_annotation` (never used in generated file).
-/// - For relative imports: reads the file and checks if it defines any needed type.
-/// - For package imports: keeps them if the file can't be resolved (safe default).
 List<String> filterImports(List<String> imports, Set<String> neededTypes, String routerFilePath) {
   const alwaysExclude = {'fiber_router_annotation'};
+  final packageConfig = _loadPackageConfig(routerFilePath);
 
   return imports.where((imp) {
-    // Extract the URI string from the import directive.
     final uriMatch = RegExp(r'''import\s+['"]([^'"]+)['"]''').firstMatch(imp);
     if (uriMatch == null) return false;
     final uri = uriMatch.group(1)!;
 
-    // Always exclude known-useless packages.
     if (alwaysExclude.any((pkg) => uri.contains(pkg))) return false;
 
-    // For relative imports, resolve the file and check for needed types.
-    if (!uri.startsWith('package:') && !uri.startsWith('dart:')) {
-      final dir = p.dirname(routerFilePath);
-      final resolvedPath = p.normalize(p.join(dir, uri));
-      final file = File(resolvedPath);
-      if (file.existsSync()) {
-        final content = file.readAsStringSync();
-        return neededTypes.any((type) => content.contains('class $type ') || content.contains('class $type{'));
-      }
-      return true; // can't resolve → keep to be safe
-    }
+    if (uri.startsWith('dart:')) return false;
 
-    // For package imports, keep unless excluded above.
-    return true;
+    final resolvedPath = _resolveUri(uri, routerFilePath, packageConfig);
+    if (resolvedPath == null) return true;
+
+    return _fileContainsAnyType(resolvedPath, neededTypes);
   }).toList();
+}
+
+bool _fileContainsAnyType(String filePath, Set<String> types) {
+  final file = File(filePath);
+  if (!file.existsSync()) return false;
+  final content = file.readAsStringSync();
+
+  if (types.any((t) => content.contains('class $t ') || content.contains('class $t{'))) {
+    return true;
+  }
+
+  final exportMatches = RegExp(r'''export\s+['"]([^'"]+)['"]''').allMatches(content);
+  for (final m in exportMatches) {
+    final exportUri = m.group(1)!;
+    if (exportUri.startsWith('dart:') || exportUri.startsWith('package:')) continue;
+    final exportPath = p.normalize(p.join(p.dirname(filePath), exportUri));
+    final exportFile = File(exportPath);
+    if (!exportFile.existsSync()) continue;
+    final exportContent = exportFile.readAsStringSync();
+    if (types.any((t) => exportContent.contains('class $t ') || exportContent.contains('class $t{'))) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+String? _resolveUri(String uri, String routerFilePath, Map<String, String> packageConfig) {
+  if (!uri.startsWith('package:')) {
+    // Relative import.
+    return p.normalize(p.join(p.dirname(routerFilePath), uri));
+  }
+
+  final parts = uri.replaceFirst('package:', '').split('/');
+  final pkgName = parts.first;
+  final pkgPath = packageConfig[pkgName];
+  if (pkgPath == null) return null;
+
+  return p.join(pkgPath, parts.skip(1).join('/'));
+}
+
+Map<String, String> _loadPackageConfig(String filePath) {
+  var dir = Directory(p.dirname(filePath));
+  while (true) {
+    final configFile = File(p.join(dir.path, '.dart_tool', 'package_config.json'));
+    if (configFile.existsSync()) {
+      return _parsePackageConfig(configFile.readAsStringSync());
+    }
+    final parent = dir.parent;
+    if (parent.path == dir.path) return {};
+    dir = parent;
+  }
+}
+
+Map<String, String> _parsePackageConfig(String json) {
+  final result = <String, String>{};
+  final matches = RegExp(r'"name"\s*:\s*"([^"]+)"[^}]*"rootUri"\s*:\s*"([^"]+)"').allMatches(json);
+  for (final m in matches) {
+    final name = m.group(1)!;
+    var rootUri = m.group(2)!;
+    if (rootUri.startsWith('file://')) {
+      rootUri = Uri.parse(rootUri).toFilePath();
+    }
+    result[name] = p.join(rootUri, 'lib');
+  }
+  return result;
 }
 
 RouterNode? _parseNode(Expression expr) {
@@ -143,11 +195,7 @@ RouterViewNode? _parseViewNode(MethodInvocation expr, {required bool isDeeplink}
   final typeArgs = expr.typeArguments?.arguments;
   if (typeArgs == null || typeArgs.length != 2) return null;
 
-  return RouterViewNode(
-    widgetType: typeArgs[0].toString(),
-    paramsType: typeArgs[1].toString(),
-    isDeeplink: isDeeplink,
-  );
+  return RouterViewNode(widgetType: typeArgs[0].toString(), paramsType: typeArgs[1].toString(), isDeeplink: isDeeplink);
 }
 
 Expression? _namedArg(ArgumentList argList, String argName) {
