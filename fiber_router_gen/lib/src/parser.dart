@@ -90,8 +90,16 @@ List<String> filterImports(List<String> imports, Set<String> neededTypes, String
     final resolvedPath = _resolveUri(uri, routerFilePath, packageConfig);
     if (resolvedPath == null) return true;
 
-    return _fileContainsAnyType(resolvedPath, neededTypes) || _fileContainsBuildContextExtension(resolvedPath);
+    return _fileContainsAnyType(resolvedPath, neededTypes) ||
+        _fileContainsBuildContextExtension(resolvedPath) ||
+        _fileReexportsPackages(resolvedPath);
   }).toList();
+}
+
+bool _fileReexportsPackages(String filePath) {
+  final file = File(filePath);
+  if (!file.existsSync()) return false;
+  return RegExp(r'''export\s+['"]package:''').hasMatch(file.readAsStringSync());
 }
 
 bool _fileContainsBuildContextExtension(String filePath) {
