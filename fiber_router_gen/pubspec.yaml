@@ -9,8 +9,6 @@ environment:
 dependencies:
   analyzer: ^13.0.0
   path: ^1.9.0
-  fiber_router_annotation:
-    path: ../fiber_router_annotation
 
 dev_dependencies:
   lints: ^6.0.0
