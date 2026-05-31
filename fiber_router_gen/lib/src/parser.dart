@@ -27,9 +27,12 @@
 // is a violation of applicable intellectual property laws and will result
 // in legal action.
 
+import 'dart:io';
+
 import 'package:analyzer/dart/analysis/features.dart';
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:path/path.dart' as p;
 
 import 'models.dart';
 
@@ -69,6 +72,40 @@ List<String> extractImports(String source) {
   );
 
   return result.unit.directives.whereType<ImportDirective>().map((d) => d.toSource()).toList();
+}
+
+/// Filters [imports] to only those that are actually needed by [neededTypes].
+///
+/// - Always excludes `fiber_router_annotation` (never used in generated file).
+/// - For relative imports: reads the file and checks if it defines any needed type.
+/// - For package imports: keeps them if the file can't be resolved (safe default).
+List<String> filterImports(List<String> imports, Set<String> neededTypes, String routerFilePath) {
+  const alwaysExclude = {'fiber_router_annotation'};
+
+  return imports.where((imp) {
+    // Extract the URI string from the import directive.
+    final uriMatch = RegExp(r'''import\s+['"]([^'"]+)['"]''').firstMatch(imp);
+    if (uriMatch == null) return false;
+    final uri = uriMatch.group(1)!;
+
+    // Always exclude known-useless packages.
+    if (alwaysExclude.any((pkg) => uri.contains(pkg))) return false;
+
+    // For relative imports, resolve the file and check for needed types.
+    if (!uri.startsWith('package:') && !uri.startsWith('dart:')) {
+      final dir = p.dirname(routerFilePath);
+      final resolvedPath = p.normalize(p.join(dir, uri));
+      final file = File(resolvedPath);
+      if (file.existsSync()) {
+        final content = file.readAsStringSync();
+        return neededTypes.any((type) => content.contains('class $type ') || content.contains('class $type{'));
+      }
+      return true; // can't resolve → keep to be safe
+    }
+
+    // For package imports, keep unless excluded above.
+    return true;
+  }).toList();
 }
 
 RouterNode? _parseNode(Expression expr) {

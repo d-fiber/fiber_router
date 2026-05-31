@@ -32,7 +32,7 @@ void main(List<String> args) {
 
   try {
     final nodes = parseRouterFile(source);
-    final imports = extractImports(source);
+    final rawImports = extractImports(source);
 
     final searchDir = _findLibDir(inputPath) ?? Directory(p.dirname(inputPath));
     final paramsMap = <String, List<ConstructorParam>>{};
@@ -46,6 +46,12 @@ void main(List<String> args) {
         stderr.writeln('  Warning: no constructor found for ${view.widgetType}');
       }
     }
+
+    // Only keep imports that provide types actually used in the generated file.
+    final neededTypes = _allViewNodes(nodes)
+        .expand((v) => [v.widgetType, if (v.hasParams) v.paramsType])
+        .toSet();
+    final imports = filterImports(rawImports, neededTypes, inputPath);
 
     final code = generateRouterExtension(nodes, imports: imports, paramsMap: paramsMap);
 
