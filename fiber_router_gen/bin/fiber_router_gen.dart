@@ -34,12 +34,10 @@ void main(List<String> args) {
     final nodes = parseRouterFile(source);
     final imports = extractImports(source);
 
-    // Walk up from the router file to find the nearest `lib/` folder so all views are reachable.
     final searchDir = _findLibDir(inputPath) ?? Directory(p.dirname(inputPath));
     final paramsMap = <String, List<ConstructorParam>>{};
 
     for (final view in _allViewNodes(nodes).where((v) => v.hasParams)) {
-      // Read the view's constructor to extract fields for the params class.
       final ctorParams = findConstructorParams(view.widgetType, searchDir);
       if (ctorParams.isNotEmpty) {
         paramsMap[view.widgetType] = ctorParams;
@@ -60,13 +58,12 @@ void main(List<String> args) {
   }
 }
 
-/// Walks up the directory tree from [filePath] and returns the first `lib/` directory found.
 Directory? _findLibDir(String filePath) {
   var dir = Directory(p.dirname(filePath));
   while (true) {
     if (p.basename(dir.path) == 'lib') return dir;
     final parent = dir.parent;
-    if (parent.path == dir.path) return null; // reached filesystem root
+    if (parent.path == dir.path) return null;
     dir = parent;
   }
 }
