@@ -188,7 +188,12 @@ RouterGroupNode? _parseGroupNode(MethodInvocation expr) {
 
   final children = routesExpr.elements.whereType<Expression>().map(_parseNode).nonNulls.toList();
 
-  return RouterGroupNode(name: name, children: children);
+  final mainExpr = _namedArg(expr.argumentList, 'main');
+  if (mainExpr == null || mainExpr is! MethodInvocation) return null;
+  final mainNode = _parseNode(mainExpr);
+  if (mainNode is! RouterViewNode) return null;
+
+  return RouterGroupNode(name: name, main: mainNode, children: children);
 }
 
 RouterViewNode? _parseViewNode(MethodInvocation expr, {required bool isDeeplink}) {

@@ -27,6 +27,8 @@
 // is a violation of applicable intellectual property laws and will result
 // in legal action.
 
+import 'package:change_case/change_case.dart';
+
 import 'models.dart';
 
 typedef ParamsMap = Map<String, List<ConstructorParam>>;
@@ -65,13 +67,18 @@ String generateRouterExtension(
   return buf.toString();
 }
 
-void _writeClass(StringBuffer buf, String className, List<RouterNode> nodes) {
+void _writeClass(StringBuffer buf, String className, List<RouterNode> nodes, {RouterViewNode? main}) {
   buf.writeln('class $className {');
   buf.writeln('  final BuildContext _context;');
   buf.writeln('  $className(this._context);');
   buf.writeln();
 
-  for (final node in nodes) {
+  if (main != null) {
+    _writeViewGo(buf, main, indent: '  ');
+    buf.writeln();
+  }
+
+  for (final node in _mergeGroupNodes(nodes)) {
     _writeMember(buf, node);
   }
 
@@ -86,6 +93,20 @@ void _writeMember(StringBuffer buf, RouterNode node) {
       buf.writeln('  $cls get $name => $cls(_context);');
     case RouterViewNode():
       _writeViewGetter(buf, node, indent: '  ');
+  }
+}
+
+void _writeViewGo(StringBuffer buf, RouterViewNode node, {required String indent}) {
+  if (node.hasParams) {
+    buf.writeln(
+      '${indent}void go(${node.paramsType} params, {bool replace = false}) => '
+      '_context.go<${node.widgetType}, ${node.paramsType}>(queryParameters: params, replace: replace);',
+    );
+  } else {
+    buf.writeln(
+      '${indent}void go({bool replace = false}) => '
+      '_context.go<${node.widgetType}, Null>(replace: replace);',
+    );
   }
 }
 
@@ -106,11 +127,38 @@ void _writeViewGetter(StringBuffer buf, RouterViewNode node, {required String in
 }
 
 void _writeGroupClasses(StringBuffer buf, List<RouterNode> nodes) {
-  for (final node in nodes) {
+  final merged = _mergeGroupNodes(nodes);
+  for (final node in merged) {
     if (node is! RouterGroupNode) continue;
-    _writeClass(buf, _groupClassName(node.name), node.children);
+    _writeClass(buf, _groupClassName(node.name), node.children, main: node.main);
     _writeGroupClasses(buf, node.children);
   }
+}
+
+List<RouterNode> _mergeGroupNodes(List<RouterNode> nodes) {
+  final result = <RouterNode>[];
+  final seen = <String, RouterGroupNode>{};
+  for (final node in nodes) {
+    if (node is RouterGroupNode) {
+      if (seen.containsKey(node.name)) {
+        final existing = seen[node.name]!;
+        final merged = RouterGroupNode(
+          name: existing.name,
+          main: existing.main,
+          children: [...existing.children, ...node.children],
+        );
+        seen[node.name] = merged;
+        final idx = result.indexWhere((n) => n is RouterGroupNode && n.name == node.name);
+        result[idx] = merged;
+      } else {
+        seen[node.name] = node;
+        result.add(node);
+      }
+    } else {
+      result.add(node);
+    }
+  }
+  return result;
 }
 
 void _writeGoRouterClasses(StringBuffer buf) {
@@ -176,9 +224,9 @@ void _writeParamsClass(StringBuffer buf, String className, List<ConstructorParam
   buf.writeln();
 }
 
-String _groupClassName(String nodeName) => 'ContextRouter${nodeName[0].toUpperCase()}${nodeName.substring(1)}';
+String _groupClassName(String nodeName) => 'ContextRouter${nodeName.toPascalCase()}';
 
-String _viewGetterName(String widgetType) => widgetType[0].toLowerCase() + widgetType.substring(1);
+String _viewGetterName(String widgetType) => widgetType.toCamelCase();
 
 String _toQueryExpr(ConstructorParam p) {
   final baseType = p.type.replaceAll('?', '');
@@ -208,6 +256,9 @@ String _fromMapExpr(ConstructorParam p) {
 Iterable<RouterViewNode> _allViewNodes(List<RouterNode> nodes) sync* {
   for (final node in nodes) {
     if (node is RouterViewNode) yield node;
-    if (node is RouterGroupNode) yield* _allViewNodes(node.children);
+    if (node is RouterGroupNode) {
+      yield node.main;
+      yield* _allViewNodes(node.children);
+    }
   }
 }

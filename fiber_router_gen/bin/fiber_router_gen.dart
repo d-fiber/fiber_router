@@ -103,6 +103,9 @@ Directory? _findLibDir(String filePath) {
 Iterable<RouterViewNode> _allViewNodes(List<RouterNode> nodes) sync* {
   for (final node in nodes) {
     if (node is RouterViewNode) yield node;
-    if (node is RouterGroupNode) yield* _allViewNodes(node.children);
+    if (node is RouterGroupNode) {
+      yield node.main;
+      yield* _allViewNodes(node.children);
+    }
   }
 }
