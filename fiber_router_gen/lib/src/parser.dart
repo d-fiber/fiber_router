@@ -215,9 +215,11 @@ RouterGroupNode? _parseGroupNode(MethodInvocation expr) {
   final children = routesExpr.elements.whereType<Expression>().map(_parseNode).nonNulls.toList();
 
   final mainExpr = _namedArg(expr.argumentList, 'main');
-  if (mainExpr == null || mainExpr is! MethodInvocation) return null;
-  final mainNode = _parseNode(mainExpr);
-  if (mainNode is! RouterViewNode) return null;
+  RouterViewNode? mainNode;
+  if (mainExpr != null && mainExpr is MethodInvocation) {
+    final parsed = _parseNode(mainExpr);
+    if (parsed is RouterViewNode) mainNode = parsed;
+  }
 
   return RouterGroupNode(name: name, main: mainNode, children: children);
 }

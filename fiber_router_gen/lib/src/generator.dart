@@ -146,7 +146,7 @@ List<RouterNode> _mergeGroupNodes(List<RouterNode> nodes) {
         final existing = seen[node.name]!;
         final merged = RouterGroupNode(
           name: existing.name,
-          main: existing.main,
+          main: existing.main ?? node.main,
           children: [...existing.children, ...node.children],
         );
         seen[node.name] = merged;
@@ -264,7 +264,7 @@ Iterable<RouterViewNode> _allViewNodes(List<RouterNode> nodes) sync* {
   for (final node in nodes) {
     if (node is RouterViewNode) yield node;
     if (node is RouterGroupNode) {
-      yield node.main;
+      if (node.main != null) yield node.main!;
       yield* _allViewNodes(node.children);
     }
   }
