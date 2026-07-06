@@ -81,6 +81,15 @@ extension PoppinRouterExtension on BuildContext {
       Router.neglect(this, () => pushReplacementNamed(name, queryParameters: query, extra: queryParameters));
     }
   }
+
+  void goShell<T extends Widget, P extends Object?>({P? queryParameters}) {
+    final name = T.toString().toSnakeCase();
+    final query = <String, String>{
+      if (queryParameters is PoppinParameters) ...queryParameters.toQuery(),
+      '_id': DateTime.now().microsecondsSinceEpoch.toString(),
+    };
+    goNamed(name, queryParameters: query, extra: queryParameters);
+  }
 }
 
 abstract interface class PoppinParameters {
@@ -629,6 +638,20 @@ class _CupertinoEdgeShadowPainter extends BoxPainter {
       canvas.drawRect(Rect.fromLTWH(x - 1.0, offset.dy, 1.0, shadowHeight), Paint()..color = interpolatedColor);
     }
   }
+}
+
+class ShellRouter<T> {
+  final void Function() _onNavigate;
+  final String name;
+  ShellRouter(this._onNavigate, this.name);
+  void go() => _onNavigate();
+}
+
+class ShellRouterParams<T, P extends Object?> {
+  final void Function(P) _onNavigate;
+  final String name;
+  ShellRouterParams(this._onNavigate, this.name);
+  void go(P params) => _onNavigate(params);
 }
 
 class PoppinFadeTransition<T> extends PageRoute<T> {

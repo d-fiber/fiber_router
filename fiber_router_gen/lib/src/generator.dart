@@ -67,7 +67,7 @@ String generateRouterExtension(
   return buf.toString();
 }
 
-void _writeClass(StringBuffer buf, String className, List<RouterNode> nodes, {RouterViewNode? main}) {
+void _writeClass(StringBuffer buf, String className, List<RouterNode> nodes, {RouterViewNode? main, bool isShell = false}) {
   buf.writeln('class $className {');
   buf.writeln('  final BuildContext _context;');
   buf.writeln('  $className(this._context);');
@@ -80,14 +80,14 @@ void _writeClass(StringBuffer buf, String className, List<RouterNode> nodes, {Ro
   }
 
   for (final node in _mergeGroupNodes(nodes)) {
-    _writeMember(buf, node);
+    _writeMember(buf, node, isShell: isShell);
   }
 
   buf.writeln('}');
   buf.writeln();
 }
 
-void _writeMember(StringBuffer buf, RouterNode node) {
+void _writeMember(StringBuffer buf, RouterNode node, {bool isShell = false}) {
   switch (node) {
     case RouterShellNode(:final builderWidgetType):
       final groupName = _shellGroupName(builderWidgetType);
@@ -97,7 +97,7 @@ void _writeMember(StringBuffer buf, RouterNode node) {
       final cls = _groupClassName(name);
       buf.writeln('  $cls get ${name.toCamelCase()} => $cls(_context);');
     case RouterViewNode():
-      _writeViewGetter(buf, node, indent: '  ');
+      _writeViewGetter(buf, node, indent: '  ', isShell: isShell);
   }
 }
 
@@ -115,20 +115,34 @@ void _writeViewGo(StringBuffer buf, RouterViewNode node, {required String indent
   }
 }
 
-void _writeViewGetter(StringBuffer buf, RouterViewNode node, {required String indent}) {
+void _writeViewGetter(StringBuffer buf, RouterViewNode node, {required String indent, bool isShell = false}) {
   final getterName = _viewGetterName(node.widgetType);
-
   final routeName = "'${node.widgetType.toSnakeCase()}'";
-  if (node.hasParams) {
-    buf.writeln(
-      '${indent}GoRouterParams<${node.widgetType}, ${node.paramsType}> get $getterName => '
-      'GoRouterParams<${node.widgetType}, ${node.paramsType}>((params, r) => _context.go<${node.widgetType}, ${node.paramsType}>(queryParameters: params, replace: r), $routeName);',
-    );
+
+  if (isShell) {
+    if (node.hasParams) {
+      buf.writeln(
+        '${indent}ShellRouterParams<${node.widgetType}, ${node.paramsType}> get $getterName => '
+        'ShellRouterParams<${node.widgetType}, ${node.paramsType}>((params) => _context.goShell<${node.widgetType}, ${node.paramsType}>(queryParameters: params), $routeName);',
+      );
+    } else {
+      buf.writeln(
+        '${indent}ShellRouter<${node.widgetType}> get $getterName => '
+        'ShellRouter<${node.widgetType}>(() => _context.goShell<${node.widgetType}, Null>(), $routeName);',
+      );
+    }
   } else {
-    buf.writeln(
-      '${indent}GoRouter<${node.widgetType}> get $getterName => '
-      'GoRouter<${node.widgetType}>((r) => _context.go<${node.widgetType}, Null>(replace: r), $routeName);',
-    );
+    if (node.hasParams) {
+      buf.writeln(
+        '${indent}GoRouterParams<${node.widgetType}, ${node.paramsType}> get $getterName => '
+        'GoRouterParams<${node.widgetType}, ${node.paramsType}>((params, r) => _context.go<${node.widgetType}, ${node.paramsType}>(queryParameters: params, replace: r), $routeName);',
+      );
+    } else {
+      buf.writeln(
+        '${indent}GoRouter<${node.widgetType}> get $getterName => '
+        'GoRouter<${node.widgetType}>((r) => _context.go<${node.widgetType}, Null>(replace: r), $routeName);',
+      );
+    }
   }
 }
 
@@ -137,7 +151,7 @@ void _writeGroupClasses(StringBuffer buf, List<RouterNode> nodes) {
   for (final node in merged) {
     if (node is RouterShellNode) {
       final groupName = _shellGroupName(node.builderWidgetType);
-      _writeClass(buf, _groupClassName(groupName), node.children);
+      _writeClass(buf, _groupClassName(groupName), node.children, isShell: true);
       _writeGroupClasses(buf, node.children);
     } else if (node is RouterGroupNode) {
       _writeClass(buf, _groupClassName(node.name), node.children, main: node.main);

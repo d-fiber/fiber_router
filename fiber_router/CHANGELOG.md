@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0
+
+- Add `ShellRouter<T>` — shell navigation helper without a `replace` parameter (navigation within a shell always swaps the child, never stacks).
+- Add `ShellRouterParams<T, P>` — same as `ShellRouter` but with typed parameters.
+- Add `BuildContext.goShell<T, P>()` — uses `goNamed` so the shell child is replaced in-place rather than pushed onto the navigator stack.
+
 ## 1.0.0
 
 - Initial release.

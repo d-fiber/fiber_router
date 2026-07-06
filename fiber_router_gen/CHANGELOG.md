@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0
+
+- Shell view getters now generate `ShellRouter` / `ShellRouterParams` (from `fiber_router`) instead of `GoRouter` / `GoRouterParams`.
+- Shell navigation calls `goShell` (`goNamed`) instead of `go` (`pushNamed`) — navigating within a shell swaps the child without stacking.
+- Fix: `_writeGroupClasses` now passes `isShell: true` when writing the class for a `RouterShellNode`, so the correct types are emitted for all shell children.
+
 ## 1.1.1
 
 - Fix shell widget type extraction: `AuthView(child: child)` is parsed as a
