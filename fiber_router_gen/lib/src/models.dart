@@ -29,6 +29,11 @@
 
 sealed class RouterNode {}
 
+class RouterShellNode extends RouterNode {
+  final List<RouterNode> children;
+  RouterShellNode({required this.children});
+}
+
 class RouterGroupNode extends RouterNode {
   final String name;
   final RouterViewNode? main;

@@ -196,10 +196,18 @@ RouterNode? _parseNode(Expression expr) {
 
   return switch (expr.methodName.name) {
     'node' => _parseGroupNode(expr),
+    'shell' => _parseShellNode(expr),
     'view' => _parseViewNode(expr, isDeeplink: false),
     'deeplink' => _parseViewNode(expr, isDeeplink: true),
     _ => null,
   };
+}
+
+RouterShellNode? _parseShellNode(MethodInvocation expr) {
+  final routesExpr = _namedArg(expr.argumentList, 'routes');
+  if (routesExpr == null || routesExpr is! ListLiteral) return null;
+  final children = routesExpr.elements.whereType<Expression>().map(_parseNode).nonNulls.toList();
+  return RouterShellNode(children: children);
 }
 
 RouterGroupNode? _parseGroupNode(MethodInvocation expr) {

@@ -89,6 +89,10 @@ void _writeClass(StringBuffer buf, String className, List<RouterNode> nodes, {Ro
 
 void _writeMember(StringBuffer buf, RouterNode node) {
   switch (node) {
+    case RouterShellNode(:final children):
+      for (final child in children) {
+        _writeMember(buf, child);
+      }
     case RouterGroupNode(:final name):
       final cls = _groupClassName(name);
       buf.writeln('  $cls get ${name.toCamelCase()} => $cls(_context);');
@@ -131,9 +135,12 @@ void _writeViewGetter(StringBuffer buf, RouterViewNode node, {required String in
 void _writeGroupClasses(StringBuffer buf, List<RouterNode> nodes) {
   final merged = _mergeGroupNodes(nodes);
   for (final node in merged) {
-    if (node is! RouterGroupNode) continue;
-    _writeClass(buf, _groupClassName(node.name), node.children, main: node.main);
-    _writeGroupClasses(buf, node.children);
+    if (node is RouterShellNode) {
+      _writeGroupClasses(buf, node.children);
+    } else if (node is RouterGroupNode) {
+      _writeClass(buf, _groupClassName(node.name), node.children, main: node.main);
+      _writeGroupClasses(buf, node.children);
+    }
   }
 }
 
@@ -156,6 +163,8 @@ List<RouterNode> _mergeGroupNodes(List<RouterNode> nodes) {
         seen[node.name] = node;
         result.add(node);
       }
+    } else if (node is RouterShellNode) {
+      result.add(node);
     } else {
       result.add(node);
     }
@@ -263,6 +272,7 @@ String _fromMapExpr(ConstructorParam p) {
 Iterable<RouterViewNode> _allViewNodes(List<RouterNode> nodes) sync* {
   for (final node in nodes) {
     if (node is RouterViewNode) yield node;
+    if (node is RouterShellNode) yield* _allViewNodes(node.children);
     if (node is RouterGroupNode) {
       if (node.main != null) yield node.main!;
       yield* _allViewNodes(node.children);

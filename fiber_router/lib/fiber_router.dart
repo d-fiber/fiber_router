@@ -29,4 +29,5 @@
 
 library;
 
-export './src/fiber_router_annotation_base.dart';
+export './annotation.dart';
+export './navigation.dart';
