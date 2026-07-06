@@ -27,35 +27,6 @@
 // is a violation of applicable intellectual property laws and will result
 // in legal action.
 
-// Copyright (C) 2026 Fiber
-//
-// All rights reserved. This script, including its code and logic, is the
-// exclusive property of Fiber. Redistribution, reproduction,
-// or modification of any part of this script is strictly prohibited
-// without prior written permission from Fiber.
-//
-// Conditions of use:
-// - The code may not be copied, duplicated, or used, in whole or in part,
-//   for any purpose without explicit authorization.
-// - Redistribution of this code, with or without modification, is not
-//   permitted unless expressly agreed upon by Fiber.
-// - The name "Fiber" and any associated branding, logos, or
-//   trademarks may not be used to endorse or promote derived products
-//   or services without prior written approval.
-//
-// Disclaimer:
-// THIS SCRIPT AND ITS CODE ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. IN NO EVENT SHALL
-// FIBER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING BUT NOT LIMITED TO LOSS OF USE,
-// DATA, PROFITS, OR BUSINESS INTERRUPTION) ARISING OUT OF OR RELATED TO THE USE
-// OR INABILITY TO USE THIS SCRIPT, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//
-// Unauthorized copying or reproduction of this script, in whole or in part,
-// is a violation of applicable intellectual property laws and will result
-// in legal action.
-
 import 'dart:async';
 import 'dart:io';
 
@@ -124,6 +95,25 @@ class PoppinRouter {
     final routes = <RouteBase>[];
 
     for (final node in nodes) {
+      if (node is _PoppinControllerRouteNode) {
+        final controllerName = node.name!.toSnakeCase();
+        final firstLeaf = _firstLeafName(node.routes);
+        routes.add(
+          ShellRoute(
+            builder: (context, state, child) => node.builder(context, child),
+            routes: [
+              if (firstLeaf != null)
+                GoRoute(
+                  path: '/$controllerName',
+                  name: controllerName,
+                  redirect: (ctx, state) => '/${firstLeaf.toSnakeCase()}',
+                ),
+              ..._flatten(node.routes, activeRedirect: activeRedirect),
+            ],
+          ),
+        );
+        continue;
+      }
       if (node is _PoppinShellRouteNode) {
         routes.add(
           ShellRoute(builder: (context, state, child) => node.builder(context, child), routes: _flatten(node.routes)),
@@ -214,9 +204,16 @@ sealed class PoppinRouteNode {
   }) = _PoppinBranchRouteNode;
 
   static PoppinRouteNode shell({
+    String? name,
     required Widget Function(BuildContext context, Widget child) builder,
     required List<PoppinRouteNode> routes,
-  }) => _PoppinShellRouteNode(builder: builder, routes: routes);
+  }) => _PoppinShellRouteNode(name: name, builder: builder, routes: routes);
+
+  static PoppinRouteNode controller<T extends Widget>({
+    String? name,
+    required Widget Function(BuildContext context, Widget child) builder,
+    required List<PoppinRouteNode> routes,
+  }) => _PoppinControllerRouteNode<T>(name: name, builder: builder, routes: routes);
 }
 
 final class _PoppinViewRouteNode<T extends Widget, P extends Object?> extends PoppinRouteNode {
@@ -242,13 +239,36 @@ final class _PoppinViewRouteNode<T extends Widget, P extends Object?> extends Po
 
 final class _PoppinShellRouteNode extends PoppinRouteNode {
   final Widget Function(BuildContext, Widget) builder;
-  _PoppinShellRouteNode({required this.builder, required super.routes}) : super._();
+  _PoppinShellRouteNode({super.name, required this.builder, required super.routes}) : super._();
+}
+
+final class _PoppinControllerRouteNode<T extends Widget> extends PoppinRouteNode {
+  final Widget Function(BuildContext, Widget) builder;
+  _PoppinControllerRouteNode({String? name, required this.builder, required super.routes})
+    : super._(name: name ?? T.toString());
 }
 
 final class _PoppinBranchRouteNode extends PoppinRouteNode {
   final PoppinRouteNode? main;
   final Widget? Function(BuildContext)? redirect;
   const _PoppinBranchRouteNode({required super.name, this.main, this.redirect, required super.routes}) : super._();
+}
+
+String? _firstLeafName(List<PoppinRouteNode> nodes) {
+  for (final node in nodes) {
+    if (node is _PoppinViewRouteNode) return node.name;
+    if (node is _PoppinShellRouteNode) {
+      final found = _firstLeafName(node.routes);
+      if (found != null) return found;
+    }
+    if (node is _PoppinControllerRouteNode) return node.name;
+    if (node is _PoppinBranchRouteNode) {
+      if (node.main?.name != null) return node.main!.name;
+      final found = _firstLeafName(node.routes);
+      if (found != null) return found;
+    }
+  }
+  return null;
 }
 
 extension GoRouterStateExtension on GoRouterState {

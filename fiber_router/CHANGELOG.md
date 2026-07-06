@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0
+
+- Add `PoppinRouteNode.controller<T>()` — a hybrid route that acts as both a shell (wraps children with a persistent UI) and a navigable route registered at `/<T snake_case>`. Navigating to the controller automatically redirects to the first available leaf route.
+- Add optional `name` parameter to `PoppinRouteNode.shell()` and `PoppinRouteNode.controller()` — overrides the group class name derived from the builder widget type.
+
 ## 1.1.3
 
 - Add `RouteTransition.none` — uses `NoTransitionPage` for an instant child swap with no animation duration. Useful for shell routes where transitions cause layout artefacts.

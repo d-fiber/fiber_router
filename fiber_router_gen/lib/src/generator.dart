@@ -89,8 +89,12 @@ void _writeClass(StringBuffer buf, String className, List<RouterNode> nodes, {Ro
 
 void _writeMember(StringBuffer buf, RouterNode node, {bool isShell = false}) {
   switch (node) {
-    case RouterShellNode(:final builderWidgetType):
-      final groupName = _shellGroupName(builderWidgetType);
+    case RouterShellNode():
+      final groupName = node.effectiveGroupName;
+      final cls = _groupClassName(groupName);
+      buf.writeln('  $cls get ${groupName.toCamelCase()} => $cls(_context);');
+    case RouterControllerNode():
+      final groupName = node.effectiveGroupName;
       final cls = _groupClassName(groupName);
       buf.writeln('  $cls get ${groupName.toCamelCase()} => $cls(_context);');
     case RouterGroupNode(:final name):
@@ -150,8 +154,10 @@ void _writeGroupClasses(StringBuffer buf, List<RouterNode> nodes) {
   final merged = _mergeGroupNodes(nodes);
   for (final node in merged) {
     if (node is RouterShellNode) {
-      final groupName = _shellGroupName(node.builderWidgetType);
-      _writeClass(buf, _groupClassName(groupName), node.children, isShell: true);
+      _writeClass(buf, _groupClassName(node.effectiveGroupName), node.children, isShell: true);
+      _writeGroupClasses(buf, node.children);
+    } else if (node is RouterControllerNode) {
+      _writeClass(buf, _groupClassName(node.effectiveGroupName), node.children, isShell: true);
       _writeGroupClasses(buf, node.children);
     } else if (node is RouterGroupNode) {
       _writeClass(buf, _groupClassName(node.name), node.children, main: node.main);
@@ -179,8 +185,6 @@ List<RouterNode> _mergeGroupNodes(List<RouterNode> nodes) {
         seen[node.name] = node;
         result.add(node);
       }
-    } else if (node is RouterShellNode) {
-      result.add(node);
     } else {
       result.add(node);
     }
@@ -271,13 +275,6 @@ void _writeParamsClass(StringBuffer buf, String className, List<ConstructorParam
 
 String _groupClassName(String nodeName) => 'ContextRouter${nodeName.toPascalCase()}';
 
-String _shellGroupName(String builderWidgetType) {
-  if (builderWidgetType.endsWith('View')) {
-    return builderWidgetType.substring(0, builderWidgetType.length - 4);
-  }
-  return builderWidgetType;
-}
-
 String _viewGetterName(String widgetType) {
   final name = widgetType.endsWith('View') ? widgetType.substring(0, widgetType.length - 4) : widgetType;
   return name.toCamelCase();
@@ -312,6 +309,7 @@ Iterable<RouterViewNode> _allViewNodes(List<RouterNode> nodes) sync* {
   for (final node in nodes) {
     if (node is RouterViewNode) yield node;
     if (node is RouterShellNode) yield* _allViewNodes(node.children);
+    if (node is RouterControllerNode) yield* _allViewNodes(node.children);
     if (node is RouterGroupNode) {
       if (node.main != null) yield node.main!;
       yield* _allViewNodes(node.children);

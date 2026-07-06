@@ -197,10 +197,25 @@ RouterNode? _parseNode(Expression expr) {
   return switch (expr.methodName.name) {
     'node' => _parseGroupNode(expr),
     'shell' => _parseShellNode(expr),
+    'controller' => _parseControllerNode(expr),
     'view' => _parseViewNode(expr, isDeeplink: false),
     'deeplink' => _parseViewNode(expr, isDeeplink: true),
     _ => null,
   };
+}
+
+RouterControllerNode? _parseControllerNode(MethodInvocation expr) {
+  final routesExpr = _namedArg(expr.argumentList, 'routes');
+  if (routesExpr == null || routesExpr is! ListLiteral) return null;
+  final children = routesExpr.elements.whereType<Expression>().map(_parseNode).nonNulls.toList();
+
+  final nameExpr = _namedArg(expr.argumentList, 'name');
+  final explicitName = nameExpr is StringLiteral ? nameExpr.stringValue : null;
+
+  final builderExpr = _namedArg(expr.argumentList, 'builder');
+  final builderWidgetType = _extractShellWidgetType(builderExpr) ?? 'Controller';
+
+  return RouterControllerNode(explicitName: explicitName, builderWidgetType: builderWidgetType, children: children);
 }
 
 RouterShellNode? _parseShellNode(MethodInvocation expr) {
@@ -208,10 +223,13 @@ RouterShellNode? _parseShellNode(MethodInvocation expr) {
   if (routesExpr == null || routesExpr is! ListLiteral) return null;
   final children = routesExpr.elements.whereType<Expression>().map(_parseNode).nonNulls.toList();
 
+  final nameExpr = _namedArg(expr.argumentList, 'name');
+  final explicitName = nameExpr is StringLiteral ? nameExpr.stringValue : null;
+
   final builderExpr = _namedArg(expr.argumentList, 'builder');
   final builderWidgetType = _extractShellWidgetType(builderExpr) ?? 'Shell';
 
-  return RouterShellNode(builderWidgetType: builderWidgetType, children: children);
+  return RouterShellNode(explicitName: explicitName, builderWidgetType: builderWidgetType, children: children);
 }
 
 String? _extractShellWidgetType(Expression? expr) {

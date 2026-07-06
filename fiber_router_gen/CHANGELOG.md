@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.0
+
+- Add support for `PoppinRouteNode.controller()` — parsed and generated identically to shell nodes, producing a named `ContextRouter{Name}` class with `isShell: true` children.
+- Add optional `name` argument parsing for both `shell` and `controller` — when provided, it overrides the group class name derived from the builder widget type.
+- Remove `_shellGroupName` helper — replaced by `effectiveGroupName` getter on `RouterShellNode` and `RouterControllerNode`.
+
 ## 1.2.1
 
 - `ShellRouter` and `ShellRouterParams` are now emitted directly in the generated file (alongside `GoRouter` / `GoRouterParams`), rather than being imported from `fiber_router`.

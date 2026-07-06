@@ -30,10 +30,25 @@
 sealed class RouterNode {}
 
 class RouterShellNode extends RouterNode {
+  final String? explicitName;
   final String builderWidgetType;
   final List<RouterNode> children;
-  RouterShellNode({required this.builderWidgetType, required this.children});
+  RouterShellNode({this.explicitName, required this.builderWidgetType, required this.children});
+
+  String get effectiveGroupName => explicitName ?? _stripView(builderWidgetType);
 }
+
+class RouterControllerNode extends RouterNode {
+  final String? explicitName;
+  final String builderWidgetType;
+  final List<RouterNode> children;
+  RouterControllerNode({this.explicitName, required this.builderWidgetType, required this.children});
+
+  String get effectiveGroupName => explicitName ?? _stripView(builderWidgetType);
+}
+
+String _stripView(String name) =>
+    name.endsWith('View') ? name.substring(0, name.length - 4) : name;
 
 class RouterGroupNode extends RouterNode {
   final String name;
