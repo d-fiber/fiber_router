@@ -88,7 +88,7 @@ extension PoppinRouterExtension on BuildContext {
       if (queryParameters is PoppinParameters) ...queryParameters.toQuery(),
       '_id': DateTime.now().microsecondsSinceEpoch.toString(),
     };
-    goNamed(name, queryParameters: query, extra: queryParameters);
+    Router.neglect(this, () => pushReplacementNamed(name, queryParameters: query, extra: queryParameters));
   }
 }
 

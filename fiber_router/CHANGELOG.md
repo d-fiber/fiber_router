@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.2
+
+- Fix `goShell`: replace `goNamed` with `pushReplacementNamed` (wrapped in `Router.neglect`) so shell transitions go through the route's `CustomTransitionPage` and apply the correct animation. `goNamed` bypassed the page-level transition, causing a blank frame between views.
+
 ## 1.1.1
 
 - Remove `ShellRouter` and `ShellRouterParams` from the library — they are now generated directly in the output file by `fiber_router_gen`, keeping the library free of generated-only artefacts.
