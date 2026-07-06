@@ -8,8 +8,9 @@ Designed to work with [`fiber_router_gen`](https://pub.dev/packages/fiber_router
 
 ## Features
 
-- **Declarative route tree** via `PoppinRouteNode.view()`, `.node()`, `.shell()`, and `.deeplink()`
+- **Declarative route tree** via `FiberRouteNode.view()`, `.node()`, `.shell()`, `.controller()`, and `.deeplink()`
 - **Shell routes** - persistent UI wrapper (e.g. auth layout) while inner routes change
+- **Controller routes** - hybrid shell + navigable route that auto-redirects to its first leaf
 - **Typed navigation** - `context.go<MyView, MyParams>()` instead of string paths
 - **Fade & system transitions** out of the box
 - **`@FiberRouterGen()` annotation** - marks the router variable for code generation
@@ -34,7 +35,7 @@ dependencies:
 import 'package:fiber_router/fiber_router.dart';
 
 @FiberRouterGen()
-final router = PoppinRouter.create(
+final router = FiberRouter.create(
   initialLocation: const HomeView(),
   refreshListenable: myAuthNotifier,
   redirect: (context, state) {
@@ -43,35 +44,35 @@ final router = PoppinRouter.create(
   },
   nodes: [
     // Simple view route
-    PoppinRouteNode.view<HomeView, Null>(
+    FiberRouteNode.view<HomeView, Null>(
       transition: RouteTransition.fade,
       builder: (_, __) => const HomeView(),
     ),
 
     // Named group with sub-routes
-    PoppinRouteNode.node(
+    FiberRouteNode.node(
       name: 'dashboard',
-      main: PoppinRouteNode.view<DashboardView, Null>(
+      main: FiberRouteNode.view<DashboardView, Null>(
         builder: (_, __) => const DashboardView(),
       ),
       routes: [
-        PoppinRouteNode.view<SettingsView, Null>(
+        FiberRouteNode.view<SettingsView, Null>(
           builder: (_, __) => const SettingsView(),
         ),
       ],
     ),
 
     // Shell route - layout persists, inner content changes
-    PoppinRouteNode.shell(
+    FiberRouteNode.shell(
       builder: (context, child) => AuthShell(child: child),
       routes: [
-        PoppinRouteNode.view<SignInView, Null>(
+        FiberRouteNode.view<SignInView, Null>(
           transition: RouteTransition.fade,
           builder: (context, _) => SignInView(
             onRequiresOtp: (token) => context.go<OtpView, OtpParams>(OtpParams(token: token)),
           ),
         ),
-        PoppinRouteNode.view<OtpView, OtpParams>(
+        FiberRouteNode.view<OtpView, OtpParams>(
           transition: RouteTransition.fade,
           builder: (_, params) => OtpView(token: params?.token ?? ''),
         ),
@@ -79,7 +80,7 @@ final router = PoppinRouter.create(
     ),
 
     // Deeplink route - parameters from query string
-    PoppinRouteNode.deeplink<InviteView, InviteParams>(
+    FiberRouteNode.deeplink<InviteView, InviteParams>(
       fromQuery: InviteParams.fromMap,
       builder: (_, params) => InviteView(params: params),
     ),
@@ -153,12 +154,13 @@ navigatorKey.currentState?.push(
 
 ## Route types
 
-| Factory                            | Description                                         |
-| ---------------------------------- | --------------------------------------------------- |
-| `PoppinRouteNode.view<T, P>()`     | Single screen route                                 |
-| `PoppinRouteNode.node()`           | Named group with optional main route and sub-routes |
-| `PoppinRouteNode.shell()`          | Shell wrapper - layout persists across inner routes |
-| `PoppinRouteNode.deeplink<T, P>()` | Route with query-string parameter deserialization   |
+| Factory                           | Description                                                                                  |
+| --------------------------------- | -------------------------------------------------------------------------------------------- |
+| `FiberRouteNode.view<T, P>()`     | Single screen route                                                                          |
+| `FiberRouteNode.node()`           | Named group with optional main route and sub-routes                                          |
+| `FiberRouteNode.shell()`          | Shell wrapper - layout persists across inner routes, not directly navigable                  |
+| `FiberRouteNode.controller<T>()`  | Shell wrapper that is also a named route at `/<T>`; navigating to it redirects to first leaf |
+| `FiberRouteNode.deeplink<T, P>()` | Route with query-string parameter deserialization                                            |
 
 ## Transitions
 

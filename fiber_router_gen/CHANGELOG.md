@@ -1,8 +1,17 @@
 # Changelog
 
+## 1.4.0
+
+- Add `FiberRouterBase<T>` — abstract base class with a single `name` field, shared by all router helper types.
+- `GoRouter`, `GoRouterParams`, `ShellRouter`, `ShellRouterParams` now extend `FiberRouterBase<T>` via `super.name`.
+- Add `ControllerRouter<T>` and `ControllerRouterParams<T, P>` — generated for `controller` route nodes. `ControllerRouter.go()` navigates to the controller entry point via `goShell`.
+- Controller context classes (e.g. `ContextRouterDashboard`) now expose a `ControllerRouter<T> get controller` getter and a `String get name` alongside their children getters.
+- Fix import filter: exclude `.g.dart` files (prevents self-import on re-generation), remove `_fileReexportsPackages` heuristic, replace with recursive `_fileContainsBuildContextExtension` that follows both relative and `package:` exports — correctly includes `ui` (re-exports `fiber_router` → `on BuildContext`) while excluding unrelated packages like `services`.
+- Fix `_allViewNodes` in the generator binary to traverse `RouterControllerNode` children, ensuring view types inside controllers are included in `neededTypes` and their import files are emitted.
+
 ## 1.3.0
 
-- Add support for `PoppinRouteNode.controller()` — parsed and generated identically to shell nodes, producing a named `ContextRouter{Name}` class with `isShell: true` children.
+- Add support for `FiberRouteNode.controller()` — parsed and generated identically to shell nodes, producing a named `ContextRouter{Name}` class with `isShell: true` children.
 - Add optional `name` argument parsing for both `shell` and `controller` — when provided, it overrides the group class name derived from the builder widget type.
 - Remove `_shellGroupName` helper — replaced by `effectiveGroupName` getter on `RouterShellNode` and `RouterControllerNode`.
 
@@ -32,9 +41,9 @@
 ## 1.0.0
 
 - Initial release.
-- Parses `@FiberRouterGen()`-annotated `PoppinRouter.create()` declarations.
+- Parses `@FiberRouterGen()`-annotated `FiberRouter.create()` declarations.
 - Generates typed `BuildContext` extension with `ContextRouter` and nested group classes.
-- Supports `PoppinRouteNode.view()`, `.node()`, `.shell()`, and `.deeplink()`.
+- Supports `FiberRouteNode.view()`, `.node()`, `.shell()`, and `.deeplink()`.
 - Generates `Parameters` classes with `toQuery()` / `fromMap()` for deeplink routes.
 - Shell routes are transparent — their children are exposed directly on the parent class.
 - Filters imports automatically — only includes what the generated file needs.

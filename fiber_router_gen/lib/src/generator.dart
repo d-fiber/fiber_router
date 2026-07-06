@@ -67,7 +67,14 @@ String generateRouterExtension(
   return buf.toString();
 }
 
-void _writeClass(StringBuffer buf, String className, List<RouterNode> nodes, {RouterViewNode? main, bool isShell = false}) {
+void _writeClass(
+  StringBuffer buf,
+  String className,
+  List<RouterNode> nodes, {
+  RouterViewNode? main,
+  bool isShell = false,
+  String? controllerWidgetType,
+}) {
   buf.writeln('class $className {');
   buf.writeln('  final BuildContext _context;');
   buf.writeln('  $className(this._context);');
@@ -76,6 +83,11 @@ void _writeClass(StringBuffer buf, String className, List<RouterNode> nodes, {Ro
   if (main != null) {
     _writeViewGo(buf, main, indent: '  ');
     buf.writeln("  String get name => '${main.widgetType.toSnakeCase()}';");
+    buf.writeln();
+  }
+
+  if (controllerWidgetType != null) {
+    _writeControllerGo(buf, controllerWidgetType, indent: '  ');
     buf.writeln();
   }
 
@@ -103,6 +115,15 @@ void _writeMember(StringBuffer buf, RouterNode node, {bool isShell = false}) {
     case RouterViewNode():
       _writeViewGetter(buf, node, indent: '  ', isShell: isShell);
   }
+}
+
+void _writeControllerGo(StringBuffer buf, String widgetType, {required String indent}) {
+  final routeName = "'${widgetType.toSnakeCase()}'";
+  buf.writeln(
+    '${indent}ControllerRouter<$widgetType> get controller => '
+    'ControllerRouter<$widgetType>(() => _context.goShell<$widgetType, Null>(), $routeName);',
+  );
+  buf.writeln("${indent}String get name => $routeName;");
 }
 
 void _writeViewGo(StringBuffer buf, RouterViewNode node, {required String indent}) {
@@ -157,7 +178,13 @@ void _writeGroupClasses(StringBuffer buf, List<RouterNode> nodes) {
       _writeClass(buf, _groupClassName(node.effectiveGroupName), node.children, isShell: true);
       _writeGroupClasses(buf, node.children);
     } else if (node is RouterControllerNode) {
-      _writeClass(buf, _groupClassName(node.effectiveGroupName), node.children, isShell: true);
+      _writeClass(
+        buf,
+        _groupClassName(node.effectiveGroupName),
+        node.children,
+        isShell: true,
+        controllerWidgetType: node.builderWidgetType,
+      );
       _writeGroupClasses(buf, node.children);
     } else if (node is RouterGroupNode) {
       _writeClass(buf, _groupClassName(node.name), node.children, main: node.main);
@@ -193,34 +220,50 @@ List<RouterNode> _mergeGroupNodes(List<RouterNode> nodes) {
 }
 
 void _writeGoRouterClasses(StringBuffer buf) {
-  buf.writeln('class GoRouter<T> {');
-  buf.writeln('  final void Function(bool) _onNavigate;');
+  buf.writeln('abstract class FiberRouterBase<T> {');
   buf.writeln('  final String name;');
-  buf.writeln('  GoRouter(this._onNavigate, this.name);');
+  buf.writeln('  const FiberRouterBase(this.name);');
+  buf.writeln('}');
+  buf.writeln();
+
+  buf.writeln('class GoRouter<T> extends FiberRouterBase<T> {');
+  buf.writeln('  final void Function(bool) _onNavigate;');
+  buf.writeln('  GoRouter(this._onNavigate, super.name);');
   buf.writeln('  void go({bool replace = false}) => _onNavigate(replace);');
   buf.writeln('}');
   buf.writeln();
 
-  buf.writeln('class GoRouterParams<T, P extends Object?> {');
+  buf.writeln('class GoRouterParams<T, P extends Object?> extends FiberRouterBase<T> {');
   buf.writeln('  final void Function(P, bool) _onNavigate;');
-  buf.writeln('  final String name;');
-  buf.writeln('  GoRouterParams(this._onNavigate, this.name);');
+  buf.writeln('  GoRouterParams(this._onNavigate, super.name);');
   buf.writeln('  void go(P params, {bool replace = false}) => _onNavigate(params, replace);');
   buf.writeln('}');
   buf.writeln();
 
-  buf.writeln('class ShellRouter<T> {');
+  buf.writeln('class ShellRouter<T> extends FiberRouterBase<T> {');
   buf.writeln('  final void Function() _onNavigate;');
-  buf.writeln('  final String name;');
-  buf.writeln('  ShellRouter(this._onNavigate, this.name);');
+  buf.writeln('  ShellRouter(this._onNavigate, super.name);');
   buf.writeln('  void go() => _onNavigate();');
   buf.writeln('}');
   buf.writeln();
 
-  buf.writeln('class ShellRouterParams<T, P extends Object?> {');
+  buf.writeln('class ShellRouterParams<T, P extends Object?> extends FiberRouterBase<T> {');
   buf.writeln('  final void Function(P) _onNavigate;');
-  buf.writeln('  final String name;');
-  buf.writeln('  ShellRouterParams(this._onNavigate, this.name);');
+  buf.writeln('  ShellRouterParams(this._onNavigate, super.name);');
+  buf.writeln('  void go(P params) => _onNavigate(params);');
+  buf.writeln('}');
+  buf.writeln();
+
+  buf.writeln('class ControllerRouter<T> extends FiberRouterBase<T> {');
+  buf.writeln('  final void Function() _onNavigate;');
+  buf.writeln('  ControllerRouter(this._onNavigate, super.name);');
+  buf.writeln('  void go() => _onNavigate();');
+  buf.writeln('}');
+  buf.writeln();
+
+  buf.writeln('class ControllerRouterParams<T, P extends Object?> extends FiberRouterBase<T> {');
+  buf.writeln('  final void Function(P) _onNavigate;');
+  buf.writeln('  ControllerRouterParams(this._onNavigate, super.name);');
   buf.writeln('  void go(P params) => _onNavigate(params);');
   buf.writeln('}');
   buf.writeln();
@@ -236,7 +279,7 @@ void _writeParamsClasses(StringBuffer buf, List<RouterNode> nodes, ParamsMap par
 }
 
 void _writeParamsClass(StringBuffer buf, String className, List<ConstructorParam> params, {required bool isDeeplink}) {
-  final declaration = isDeeplink ? 'class $className implements PoppinParameters {' : 'class $className {';
+  final declaration = isDeeplink ? 'class $className implements FiberParameters {' : 'class $className {';
   buf.writeln(declaration);
 
   for (final p in params) {

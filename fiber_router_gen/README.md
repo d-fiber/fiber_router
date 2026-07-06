@@ -1,14 +1,16 @@
 # fiber_router_gen
 
-Code generator for [`fiber_router`](https://pub.dev/packages/fiber_router) - produces typed `BuildContext` navigation extensions from your `PoppinRouter` definition.
+Code generator for [`fiber_router`](https://pub.dev/packages/fiber_router) - produces typed `BuildContext` navigation extensions from your `FiberRouter` definition.
 
 ---
 
 ## Features
 
 - Generates a `ContextRouter` extension on `BuildContext` with typed getters for every route
-- Supports `view`, `node`, `shell`, and `deeplink` route nodes
-- Shell routes are transparent - their children appear directly on the parent class
+- Supports `view`, `node`, `shell`, `controller`, and `deeplink` route nodes
+- Shell routes expose their children directly on the parent class
+- Controller routes generate a named context class with a `ControllerRouter<T> get controller` getter
+- Generates a shared `FiberRouterBase<T>` with `GoRouter`, `ShellRouter`, and `ControllerRouter` subclasses
 - Generates `Parameters` classes with `toQuery()` / `fromMap()` for deeplink routes
 - Filters imports automatically - only what the generated file actually needs
 
@@ -33,30 +35,30 @@ dev_dependencies:
 import 'package:fiber_router/fiber_router.dart';
 
 @FiberRouterGen()
-final router = PoppinRouter.create(
+final router = FiberRouter.create(
   initialLocation: const HomeView(),
   nodes: [
-    PoppinRouteNode.view<HomeView, Null>(
+    FiberRouteNode.view<HomeView, Null>(
       builder: (_, __) => const HomeView(),
     ),
-    PoppinRouteNode.node(
+    FiberRouteNode.node(
       name: 'dashboard',
-      main: PoppinRouteNode.view<DashboardView, Null>(
+      main: FiberRouteNode.view<DashboardView, Null>(
         builder: (_, __) => const DashboardView(),
       ),
       routes: [
-        PoppinRouteNode.view<SettingsView, Null>(
+        FiberRouteNode.view<SettingsView, Null>(
           builder: (_, __) => const SettingsView(),
         ),
       ],
     ),
-    PoppinRouteNode.shell(
+    FiberRouteNode.shell(
       builder: (context, child) => AuthShell(child: child),
       routes: [
-        PoppinRouteNode.view<SignInView, Null>(
+        FiberRouteNode.view<SignInView, Null>(
           builder: (_, __) => const SignInView(),
         ),
-        PoppinRouteNode.view<OtpView, OtpParameters>(
+        FiberRouteNode.view<OtpView, OtpParameters>(
           builder: (_, params) => OtpView(token: params?.token ?? ''),
         ),
       ],
@@ -130,13 +132,31 @@ class OtpParameters {
 
 ## Route node behaviour
 
-| Node type         | Generator output                                                  |
-| ----------------- | ----------------------------------------------------------------- |
-| `view<T, Null>`   | `GoRouter<T>` getter with `.go({replace})`                        |
-| `view<T, P>`      | `GoRouterParams<T, P>` getter with `.go(params, {replace})`       |
-| `node(name, ...)` | Nested `ContextRouter{Name}` class                                |
-| `shell(...)`      | Children inlined directly into the parent class                   |
-| `deeplink<T, P>`  | Same as `view<T, P>` + generates `toQuery()` / `fromMap()` on `P` |
+| Node type            | Generator output                                                                          |
+| -------------------- | ----------------------------------------------------------------------------------------- |
+| `view<T, Null>`      | `GoRouter<T>` getter with `.go({replace})`                                                |
+| `view<T, P>`         | `GoRouterParams<T, P>` getter with `.go(params, {replace})`                               |
+| `node(name, ...)`    | Nested `ContextRouter{Name}` class                                                        |
+| `shell(...)`         | Children inlined directly into the parent class                                           |
+| `controller<T>(...)` | Nested `ContextRouter{T}` class with `ControllerRouter<T> get controller` and child getters |
+| `deeplink<T, P>`     | Same as `view<T, P>` + generates `toQuery()` / `fromMap()` on `P`                        |
+
+### Router helper hierarchy
+
+All generated router helpers extend a common base:
+
+```dart
+abstract class FiberRouterBase<T> {
+  final String name;
+}
+
+class GoRouter<T> extends FiberRouterBase<T>           // view, push navigation
+class GoRouterParams<T, P> extends FiberRouterBase<T>  // view with params
+class ShellRouter<T> extends FiberRouterBase<T>        // shell child, replace navigation
+class ShellRouterParams<T, P> extends FiberRouterBase<T>
+class ControllerRouter<T> extends FiberRouterBase<T>   // controller entry point
+class ControllerRouterParams<T, P> extends FiberRouterBase<T>
+```
 
 ---
 

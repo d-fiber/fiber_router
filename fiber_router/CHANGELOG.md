@@ -1,9 +1,13 @@
 # Changelog
 
+## 1.3.0
+
+- No runtime changes — version bump to stay in sync with `fiber_router_gen 1.4.0`.
+
 ## 1.2.0
 
-- Add `PoppinRouteNode.controller<T>()` — a hybrid route that acts as both a shell (wraps children with a persistent UI) and a navigable route registered at `/<T snake_case>`. Navigating to the controller automatically redirects to the first available leaf route.
-- Add optional `name` parameter to `PoppinRouteNode.shell()` and `PoppinRouteNode.controller()` — overrides the group class name derived from the builder widget type.
+- Add `FiberRouteNode.controller<T>()` — a hybrid route that acts as both a shell (wraps children with a persistent UI) and a navigable route registered at `/<T snake_case>`. Navigating to the controller automatically redirects to the first available leaf route.
+- Add optional `name` parameter to `FiberRouteNode.shell()` and `FiberRouteNode.controller()` — overrides the group class name derived from the builder widget type.
 
 ## 1.1.3
 
@@ -26,11 +30,11 @@
 ## 1.0.0
 
 - Initial release.
-- `PoppinRouter.create()` — wraps `GoRouter` with a declarative node-based API.
-- `PoppinRouteNode.view()` — typed view route with optional fade transition.
-- `PoppinRouteNode.node()` — named group for organizing related routes.
-- `PoppinRouteNode.shell()` — shell route that keeps a persistent UI wrapper while inner routes change.
-- `PoppinRouteNode.deeplink()` — deeplink-capable route with query-parameter deserialization.
+- `FiberRouter.create()` — wraps `GoRouter` with a declarative node-based API.
+- `FiberRouteNode.view()` — typed view route with optional fade transition.
+- `FiberRouteNode.node()` — named group for organizing related routes.
+- `FiberRouteNode.shell()` — shell route that keeps a persistent UI wrapper while inner routes change.
+- `FiberRouteNode.deeplink()` — deeplink-capable route with query-parameter deserialization.
 - `BuildContext.go<T, P>()` — type-safe navigation extension.
 - `GoRouterState.isOn<T>()` — check if the current location matches a route type.
 - `NavigatorFadeTransition` — fade `PageRoute` for local `Navigator` push.

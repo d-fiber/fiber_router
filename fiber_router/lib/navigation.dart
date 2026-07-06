@@ -37,12 +37,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
-extension PoppinRouterExtension on BuildContext {
+extension FiberRouterExtension on BuildContext {
   void go<T extends Widget, P extends Object?>({P? queryParameters, bool replace = false}) {
     final name = T.toString().toSnakeCase();
 
     final query = <String, String>{
-      if (queryParameters is PoppinParameters) ...queryParameters.toQuery(),
+      if (queryParameters is FiberParameters) ...queryParameters.toQuery(),
       '_id': DateTime.now().microsecondsSinceEpoch.toString(),
     };
 
@@ -56,31 +56,31 @@ extension PoppinRouterExtension on BuildContext {
   void goShell<T extends Widget, P extends Object?>({P? queryParameters}) {
     final name = T.toString().toSnakeCase();
     final query = <String, String>{
-      if (queryParameters is PoppinParameters) ...queryParameters.toQuery(),
+      if (queryParameters is FiberParameters) ...queryParameters.toQuery(),
       '_id': DateTime.now().microsecondsSinceEpoch.toString(),
     };
     Router.neglect(this, () => pushReplacementNamed(name, queryParameters: query, extra: queryParameters));
   }
 }
 
-abstract interface class PoppinParameters {
+abstract interface class FiberParameters {
   Map<String, String> toQuery();
 }
 
 enum RouteTransition { system, fade, none }
 
-class PoppinRouter {
-  const PoppinRouter._();
+class FiberRouter {
+  const FiberRouter._();
 
   static GoRouter create({
     required Widget initialLocation,
     List<NavigatorObserver>? observers,
     FutureOr<Widget?> Function(BuildContext, GoRouterState)? redirect,
-    required List<PoppinRouteNode> nodes,
+    required List<FiberRouteNode> nodes,
     Listenable? refreshListenable,
   }) => GoRouter(
     initialLocation: "/${initialLocation.runtimeType.toString().toSnakeCase()}",
-    observers: [_poppinRouteObserver, ...?observers],
+    observers: [_fiberRouteObserver, ...?observers],
     refreshListenable: refreshListenable,
     redirect: (context, state) async {
       final result = await redirect?.call(context, state);
@@ -91,11 +91,11 @@ class PoppinRouter {
     routes: _flatten(nodes),
   );
 
-  static List<RouteBase> _flatten(List<PoppinRouteNode> nodes, {Widget? Function(BuildContext)? activeRedirect}) {
+  static List<RouteBase> _flatten(List<FiberRouteNode> nodes, {Widget? Function(BuildContext)? activeRedirect}) {
     final routes = <RouteBase>[];
 
     for (final node in nodes) {
-      if (node is _PoppinControllerRouteNode) {
+      if (node is _FiberControllerRouteNode) {
         final controllerName = node.name!.toSnakeCase();
         final firstLeaf = _firstLeafName(node.routes);
         routes.add(
@@ -114,13 +114,13 @@ class PoppinRouter {
         );
         continue;
       }
-      if (node is _PoppinShellRouteNode) {
+      if (node is _FiberShellRouteNode) {
         routes.add(
           ShellRoute(builder: (context, state, child) => node.builder(context, child), routes: _flatten(node.routes)),
         );
         continue;
       }
-      if (node is _PoppinBranchRouteNode) {
+      if (node is _FiberBranchRouteNode) {
         final redirect = node.redirect ?? activeRedirect;
         final main = node.main;
         if (main != null) {
@@ -166,58 +166,58 @@ class PoppinRouter {
   }
 }
 
-sealed class PoppinRouteNode {
+sealed class FiberRouteNode {
   final String? name;
   final Page<dynamic> Function(BuildContext, GoRouterState)? pageBuilder;
-  final List<PoppinRouteNode> routes;
+  final List<FiberRouteNode> routes;
 
-  const PoppinRouteNode._({this.name, this.pageBuilder, this.routes = const []});
+  const FiberRouteNode._({this.name, this.pageBuilder, this.routes = const []});
 
-  static PoppinRouteNode view<T extends Widget, P extends Object?>({
+  static FiberRouteNode view<T extends Widget, P extends Object?>({
     RouteTransition transition = RouteTransition.system,
     bool gesturePopEnabled = true,
     required Widget Function(BuildContext, P?) builder,
-  }) => _PoppinViewRouteNode<T, P?>(
+  }) => _FiberViewRouteNode<T, P?>(
     transition: transition,
     gesturePopEnabled: gesturePopEnabled,
     fromQuery: null,
     builder: builder,
   );
 
-  static PoppinRouteNode deeplink<T extends Widget, P extends PoppinParameters>({
+  static FiberRouteNode deeplink<T extends Widget, P extends FiberParameters>({
     RouteTransition transition = RouteTransition.system,
     bool gesturePopEnabled = true,
     required P Function(Map<String, String>) fromQuery,
     required Widget Function(BuildContext, P?) builder,
-  }) => _PoppinViewRouteNode<T, P?>(
+  }) => _FiberViewRouteNode<T, P?>(
     transition: transition,
     gesturePopEnabled: gesturePopEnabled,
     fromQuery: fromQuery,
     builder: builder,
   );
 
-  const factory PoppinRouteNode.node({
+  const factory FiberRouteNode.node({
     required String name,
-    PoppinRouteNode? main,
+    FiberRouteNode? main,
     Widget? Function(BuildContext)? redirect,
-    required List<PoppinRouteNode> routes,
-  }) = _PoppinBranchRouteNode;
+    required List<FiberRouteNode> routes,
+  }) = _FiberBranchRouteNode;
 
-  static PoppinRouteNode shell({
+  static FiberRouteNode shell({
     String? name,
     required Widget Function(BuildContext context, Widget child) builder,
-    required List<PoppinRouteNode> routes,
-  }) => _PoppinShellRouteNode(name: name, builder: builder, routes: routes);
+    required List<FiberRouteNode> routes,
+  }) => _FiberShellRouteNode(name: name, builder: builder, routes: routes);
 
-  static PoppinRouteNode controller<T extends Widget>({
+  static FiberRouteNode controller<T extends Widget>({
     String? name,
     required Widget Function(BuildContext context, Widget child) builder,
-    required List<PoppinRouteNode> routes,
-  }) => _PoppinControllerRouteNode<T>(name: name, builder: builder, routes: routes);
+    required List<FiberRouteNode> routes,
+  }) => _FiberControllerRouteNode<T>(name: name, builder: builder, routes: routes);
 }
 
-final class _PoppinViewRouteNode<T extends Widget, P extends Object?> extends PoppinRouteNode {
-  _PoppinViewRouteNode({
+final class _FiberViewRouteNode<T extends Widget, P extends Object?> extends FiberRouteNode {
+  _FiberViewRouteNode({
     RouteTransition transition = RouteTransition.system,
     bool gesturePopEnabled = true,
     required P Function(Map<String, String>)? fromQuery,
@@ -237,32 +237,32 @@ final class _PoppinViewRouteNode<T extends Widget, P extends Object?> extends Po
        );
 }
 
-final class _PoppinShellRouteNode extends PoppinRouteNode {
+final class _FiberShellRouteNode extends FiberRouteNode {
   final Widget Function(BuildContext, Widget) builder;
-  _PoppinShellRouteNode({super.name, required this.builder, required super.routes}) : super._();
+  _FiberShellRouteNode({super.name, required this.builder, required super.routes}) : super._();
 }
 
-final class _PoppinControllerRouteNode<T extends Widget> extends PoppinRouteNode {
+final class _FiberControllerRouteNode<T extends Widget> extends FiberRouteNode {
   final Widget Function(BuildContext, Widget) builder;
-  _PoppinControllerRouteNode({String? name, required this.builder, required super.routes})
+  _FiberControllerRouteNode({String? name, required this.builder, required super.routes})
     : super._(name: name ?? T.toString());
 }
 
-final class _PoppinBranchRouteNode extends PoppinRouteNode {
-  final PoppinRouteNode? main;
+final class _FiberBranchRouteNode extends FiberRouteNode {
+  final FiberRouteNode? main;
   final Widget? Function(BuildContext)? redirect;
-  const _PoppinBranchRouteNode({required super.name, this.main, this.redirect, required super.routes}) : super._();
+  const _FiberBranchRouteNode({required super.name, this.main, this.redirect, required super.routes}) : super._();
 }
 
-String? _firstLeafName(List<PoppinRouteNode> nodes) {
+String? _firstLeafName(List<FiberRouteNode> nodes) {
   for (final node in nodes) {
-    if (node is _PoppinViewRouteNode) return node.name;
-    if (node is _PoppinShellRouteNode) {
+    if (node is _FiberViewRouteNode) return node.name;
+    if (node is _FiberShellRouteNode) {
       final found = _firstLeafName(node.routes);
       if (found != null) return found;
     }
-    if (node is _PoppinControllerRouteNode) return node.name;
-    if (node is _PoppinBranchRouteNode) {
+    if (node is _FiberControllerRouteNode) return node.name;
+    if (node is _FiberBranchRouteNode) {
       if (node.main?.name != null) return node.main!.name;
       final found = _firstLeafName(node.routes);
       if (found != null) return found;
@@ -301,13 +301,13 @@ class _SleepingPageState extends State<_SleepingPage> with RouteAware {
     super.didChangeDependencies();
     final route = ModalRoute.of(context);
     if (route is PageRoute) {
-      _poppinRouteObserver.subscribe(this, route);
+      _fiberRouteObserver.subscribe(this, route);
     }
   }
 
   @override
   void dispose() {
-    _poppinRouteObserver.unsubscribe(this);
+    _fiberRouteObserver.unsubscribe(this);
     super.dispose();
   }
 
@@ -423,7 +423,7 @@ class _CupertinoPageRoute<T> extends PageRoute<T> with CupertinoRouteTransitionM
   bool get popGestureEnabled => gesturePopEnabled && super.popGestureEnabled;
 }
 
-final RouteObserver<PageRoute<dynamic>> _poppinRouteObserver = RouteObserver<PageRoute<dynamic>>();
+final RouteObserver<PageRoute<dynamic>> _fiberRouteObserver = RouteObserver<PageRoute<dynamic>>();
 
 final Animatable<Offset> _kRightMiddleTween = Tween<Offset>(begin: const Offset(1.0, 0.0), end: Offset.zero);
 final Animatable<Offset> _kMiddleLeftTween = Tween<Offset>(begin: Offset.zero, end: const Offset(-1.0 / 3.0, 0.0));
@@ -663,10 +663,10 @@ class _CupertinoEdgeShadowPainter extends BoxPainter {
   }
 }
 
-class PoppinFadeTransition<T> extends PageRoute<T> {
+class FiberFadeTransition<T> extends PageRoute<T> {
   final Widget child;
 
-  PoppinFadeTransition(this.child);
+  FiberFadeTransition(this.child);
 
   @override
   Color get barrierColor => Colors.transparent;

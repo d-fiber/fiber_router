@@ -104,6 +104,7 @@ Iterable<RouterViewNode> _allViewNodes(List<RouterNode> nodes) sync* {
   for (final node in nodes) {
     if (node is RouterViewNode) yield node;
     if (node is RouterShellNode) yield* _allViewNodes(node.children);
+    if (node is RouterControllerNode) yield* _allViewNodes(node.children);
     if (node is RouterGroupNode) {
       if (node.main != null) yield node.main!;
       yield* _allViewNodes(node.children);

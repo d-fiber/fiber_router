@@ -27,8 +27,13 @@
 // is a violation of applicable intellectual property laws and will result
 // in legal action.
 
-library;
+import 'package:flutter/material.dart';
 
-export './annotation.dart';
-export './controller.dart';
-export './navigation.dart';
+class ControllerView extends StatelessWidget {
+  final Widget child;
+
+  const ControllerView({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) => child;
+}

@@ -61,7 +61,7 @@ List<RouterNode> parseRouterFile(String source) {
     return nodesList.elements.whereType<Expression>().map(_parseNode).nonNulls.toList();
   }
 
-  throw StateError('No @FiberRouterGen() annotated PoppinRouter.create() found in source.');
+  throw StateError('No @FiberRouterGen() annotated FiberRouter.create() found in source.');
 }
 
 List<String> extractImports(String source) {
@@ -84,38 +84,38 @@ List<String> filterImports(List<String> imports, Set<String> neededTypes, String
     final uri = uriMatch.group(1)!;
 
     if (alwaysExclude.any((pkg) => uri.contains(pkg))) return false;
-
     if (uri.startsWith('dart:')) return false;
+    if (uri.endsWith('.g.dart')) return false;
 
     final resolvedPath = _resolveUri(uri, routerFilePath, packageConfig);
     if (resolvedPath == null) return true;
 
     return _fileContainsAnyType(resolvedPath, neededTypes) ||
-        _fileContainsBuildContextExtension(resolvedPath) ||
-        _fileReexportsPackages(resolvedPath);
+        _fileContainsBuildContextExtension(resolvedPath, packageConfig);
   }).toList();
 }
 
-bool _fileReexportsPackages(String filePath) {
-  final file = File(filePath);
-  if (!file.existsSync()) return false;
-  return RegExp(r'''export\s+['"]package:''').hasMatch(file.readAsStringSync());
-}
+// Recursively follows both relative and package: exports to detect `on BuildContext`.
+// This correctly includes packages like `ui` (which re-exports fiber_router → navigation.dart)
+// while excluding unrelated packages like `services` that have no BuildContext extensions.
+bool _fileContainsBuildContextExtension(String filePath, Map<String, String> packageConfig, [Set<String>? visited]) {
+  visited ??= {};
+  if (!visited.add(filePath)) return false;
 
-bool _fileContainsBuildContextExtension(String filePath) {
   final file = File(filePath);
   if (!file.existsSync()) return false;
   final content = file.readAsStringSync();
   if (content.contains('on BuildContext')) return true;
 
-  final exportMatches = RegExp(r'''export\s+['"]([^'"]+)['"]''').allMatches(content);
-  for (final m in exportMatches) {
+  for (final m in RegExp(r'''export\s+['"]([^'"]+)['"]''').allMatches(content)) {
     final exportUri = m.group(1)!;
-    if (exportUri.startsWith('dart:') || exportUri.startsWith('package:')) continue;
-    final exportPath = p.normalize(p.join(p.dirname(filePath), exportUri));
-    final exportFile = File(exportPath);
-    if (!exportFile.existsSync()) continue;
-    if (exportFile.readAsStringSync().contains('on BuildContext')) return true;
+    if (exportUri.startsWith('dart:')) continue;
+
+    final exportPath = exportUri.startsWith('package:')
+        ? _resolveUri(exportUri, filePath, packageConfig)
+        : p.normalize(p.join(p.dirname(filePath), exportUri));
+
+    if (exportPath != null && _fileContainsBuildContextExtension(exportPath, packageConfig, visited)) return true;
   }
 
   return false;
@@ -190,7 +190,7 @@ RouterNode? _parseNode(Expression expr) {
   if (expr is! MethodInvocation) return null;
 
   final target = expr.target;
-  if (target is! SimpleIdentifier || target.name != 'PoppinRouteNode') {
+  if (target is! SimpleIdentifier || target.name != 'FiberRouteNode') {
     return null;
   }
 
