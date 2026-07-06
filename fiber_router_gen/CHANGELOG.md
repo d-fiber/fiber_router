@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.1
+
+- Fix missing import for controller builder widget types (e.g. `DashboardView`): `_allControllerBuilderTypes` now collects builder widget types from all `RouterControllerNode` instances and adds them to `neededTypes`, so their import files are emitted in the generated output.
+
 ## 1.4.0
 
 - Add `FiberRouterBase<T>` — abstract base class with a single `name` field, shared by all router helper types.

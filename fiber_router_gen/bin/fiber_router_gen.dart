@@ -76,7 +76,10 @@ void main(List<String> args) {
       }
     }
 
-    final neededTypes = _allViewNodes(nodes).expand((v) => [v.widgetType, if (v.hasParams) v.paramsType]).toSet();
+    final neededTypes = {
+      ..._allViewNodes(nodes).expand((v) => [v.widgetType, if (v.hasParams) v.paramsType]),
+      ..._allControllerBuilderTypes(nodes),
+    };
     final imports = filterImports(rawImports, neededTypes, inputPath);
 
     final code = generateRouterExtension(nodes, imports: imports, paramsMap: paramsMap);
@@ -97,6 +100,17 @@ Directory? _findLibDir(String filePath) {
     final parent = dir.parent;
     if (parent.path == dir.path) return null;
     dir = parent;
+  }
+}
+
+Iterable<String> _allControllerBuilderTypes(List<RouterNode> nodes) sync* {
+  for (final node in nodes) {
+    if (node is RouterControllerNode) {
+      yield node.builderWidgetType;
+      yield* _allControllerBuilderTypes(node.children);
+    }
+    if (node is RouterShellNode) yield* _allControllerBuilderTypes(node.children);
+    if (node is RouterGroupNode) yield* _allControllerBuilderTypes(node.children);
   }
 }
 
