@@ -96,7 +96,7 @@ abstract interface class PoppinParameters {
   Map<String, String> toQuery();
 }
 
-enum RouteTransition { system, fade }
+enum RouteTransition { system, fade, none }
 
 class PoppinRouter {
   const PoppinRouter._();
@@ -310,6 +310,9 @@ Page<T> _routeTransition<T>({
   final key = state.pageKey;
   final sleeping = _SleepingPage(child: child);
 
+  if (transition == RouteTransition.none) {
+    return NoTransitionPage<T>(key: key, child: sleeping);
+  }
   if (transition == RouteTransition.fade) {
     return CustomTransitionPage<T>(
       key: key,

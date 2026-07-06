@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.3
+
+- Add `RouteTransition.none` — uses `NoTransitionPage` for an instant child swap with no animation duration. Useful for shell routes where transitions cause layout artefacts.
+
 ## 1.1.2
 
 - Fix `goShell`: replace `goNamed` with `pushReplacementNamed` (wrapped in `Router.neglect`) so shell transitions go through the route's `CustomTransitionPage` and apply the correct animation. `goNamed` bypassed the page-level transition, causing a blank frame between views.
