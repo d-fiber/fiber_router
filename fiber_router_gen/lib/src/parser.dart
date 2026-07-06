@@ -225,6 +225,7 @@ String? _extractShellWidgetType(Expression? expr) {
   if (bodyExpr is MethodInvocation) {
     final target = bodyExpr.target;
     if (target is SimpleIdentifier) return target.name;
+    return bodyExpr.methodName.name;
   }
   return null;
 }

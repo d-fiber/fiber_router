@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1
+
+- Fix shell widget type extraction: `AuthView(child: child)` is parsed as a
+  `MethodInvocation` without a target — now correctly returns `methodName.name`
+  instead of falling back to `'Shell'`.
+
 ## 1.1.0
 
 - Shell nodes now generate a named `ContextRouter{Name}` class instead of inlining children into the parent.
