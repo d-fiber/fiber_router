@@ -89,10 +89,10 @@ void _writeClass(StringBuffer buf, String className, List<RouterNode> nodes, {Ro
 
 void _writeMember(StringBuffer buf, RouterNode node) {
   switch (node) {
-    case RouterShellNode(:final children):
-      for (final child in children) {
-        _writeMember(buf, child);
-      }
+    case RouterShellNode(:final builderWidgetType):
+      final groupName = _shellGroupName(builderWidgetType);
+      final cls = _groupClassName(groupName);
+      buf.writeln('  $cls get ${groupName.toCamelCase()} => $cls(_context);');
     case RouterGroupNode(:final name):
       final cls = _groupClassName(name);
       buf.writeln('  $cls get ${name.toCamelCase()} => $cls(_context);');
@@ -136,6 +136,8 @@ void _writeGroupClasses(StringBuffer buf, List<RouterNode> nodes) {
   final merged = _mergeGroupNodes(nodes);
   for (final node in merged) {
     if (node is RouterShellNode) {
+      final groupName = _shellGroupName(node.builderWidgetType);
+      _writeClass(buf, _groupClassName(groupName), node.children);
       _writeGroupClasses(buf, node.children);
     } else if (node is RouterGroupNode) {
       _writeClass(buf, _groupClassName(node.name), node.children, main: node.main);
@@ -238,6 +240,13 @@ void _writeParamsClass(StringBuffer buf, String className, List<ConstructorParam
 }
 
 String _groupClassName(String nodeName) => 'ContextRouter${nodeName.toPascalCase()}';
+
+String _shellGroupName(String builderWidgetType) {
+  if (builderWidgetType.endsWith('View')) {
+    return builderWidgetType.substring(0, builderWidgetType.length - 4);
+  }
+  return builderWidgetType;
+}
 
 String _viewGetterName(String widgetType) {
   final name = widgetType.endsWith('View') ? widgetType.substring(0, widgetType.length - 4) : widgetType;

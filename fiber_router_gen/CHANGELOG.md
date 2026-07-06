@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0
+
+- Shell nodes now generate a named `ContextRouter{Name}` class instead of inlining children into the parent.
+  The class name is derived from the builder widget type: `AuthView` → `ContextRouterAuth`, accessible via `context.router.auth`.
+- Parser extracts the shell widget type from the builder expression AST (`(ctx, child) => AuthView(...)` → `AuthView`).
+- Generator derives the group name by stripping the `View` suffix from the builder type.
+
 ## 1.0.0
 
 - Initial release.

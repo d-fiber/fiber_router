@@ -30,8 +30,9 @@
 sealed class RouterNode {}
 
 class RouterShellNode extends RouterNode {
+  final String builderWidgetType;
   final List<RouterNode> children;
-  RouterShellNode({required this.children});
+  RouterShellNode({required this.builderWidgetType, required this.children});
 }
 
 class RouterGroupNode extends RouterNode {

@@ -207,7 +207,26 @@ RouterShellNode? _parseShellNode(MethodInvocation expr) {
   final routesExpr = _namedArg(expr.argumentList, 'routes');
   if (routesExpr == null || routesExpr is! ListLiteral) return null;
   final children = routesExpr.elements.whereType<Expression>().map(_parseNode).nonNulls.toList();
-  return RouterShellNode(children: children);
+
+  final builderExpr = _namedArg(expr.argumentList, 'builder');
+  final builderWidgetType = _extractShellWidgetType(builderExpr) ?? 'Shell';
+
+  return RouterShellNode(builderWidgetType: builderWidgetType, children: children);
+}
+
+String? _extractShellWidgetType(Expression? expr) {
+  if (expr is! FunctionExpression) return null;
+  final body = expr.body;
+  if (body is! ExpressionFunctionBody) return null;
+  final bodyExpr = body.expression;
+  if (bodyExpr is InstanceCreationExpression) {
+    return bodyExpr.constructorName.type.name.lexeme;
+  }
+  if (bodyExpr is MethodInvocation) {
+    final target = bodyExpr.target;
+    if (target is SimpleIdentifier) return target.name;
+  }
+  return null;
 }
 
 RouterGroupNode? _parseGroupNode(MethodInvocation expr) {
