@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1
+
+- Remove `ShellRouter` and `ShellRouterParams` from the library — they are now generated directly in the output file by `fiber_router_gen`, keeping the library free of generated-only artefacts.
+
 ## 1.1.0
 
 - Add `ShellRouter<T>` — shell navigation helper without a `replace` parameter (navigation within a shell always swaps the child, never stacks).

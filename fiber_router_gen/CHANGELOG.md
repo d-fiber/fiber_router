@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1
+
+- `ShellRouter` and `ShellRouterParams` are now emitted directly in the generated file (alongside `GoRouter` / `GoRouterParams`), rather than being imported from `fiber_router`.
+
 ## 1.2.0
 
 - Shell view getters now generate `ShellRouter` / `ShellRouterParams` (from `fiber_router`) instead of `GoRouter` / `GoRouterParams`.

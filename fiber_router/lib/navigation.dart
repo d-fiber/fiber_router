@@ -640,20 +640,6 @@ class _CupertinoEdgeShadowPainter extends BoxPainter {
   }
 }
 
-class ShellRouter<T> {
-  final void Function() _onNavigate;
-  final String name;
-  ShellRouter(this._onNavigate, this.name);
-  void go() => _onNavigate();
-}
-
-class ShellRouterParams<T, P extends Object?> {
-  final void Function(P) _onNavigate;
-  final String name;
-  ShellRouterParams(this._onNavigate, this.name);
-  void go(P params) => _onNavigate(params);
-}
-
 class PoppinFadeTransition<T> extends PageRoute<T> {
   final Widget child;
 

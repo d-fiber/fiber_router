@@ -204,6 +204,22 @@ void _writeGoRouterClasses(StringBuffer buf) {
   buf.writeln('  void go(P params, {bool replace = false}) => _onNavigate(params, replace);');
   buf.writeln('}');
   buf.writeln();
+
+  buf.writeln('class ShellRouter<T> {');
+  buf.writeln('  final void Function() _onNavigate;');
+  buf.writeln('  final String name;');
+  buf.writeln('  ShellRouter(this._onNavigate, this.name);');
+  buf.writeln('  void go() => _onNavigate();');
+  buf.writeln('}');
+  buf.writeln();
+
+  buf.writeln('class ShellRouterParams<T, P extends Object?> {');
+  buf.writeln('  final void Function(P) _onNavigate;');
+  buf.writeln('  final String name;');
+  buf.writeln('  ShellRouterParams(this._onNavigate, this.name);');
+  buf.writeln('  void go(P params) => _onNavigate(params);');
+  buf.writeln('}');
+  buf.writeln();
 }
 
 void _writeParamsClasses(StringBuffer buf, List<RouterNode> nodes, ParamsMap paramsMap) {
