@@ -107,18 +107,17 @@ class FiberRouter {
         final firstLeaf = _firstLeafName(node.routes);
         routes.add(
           ShellRoute(
-            builder: (context, state, child) => node.builder(context, child),
+            pageBuilder: (context, state, child) => _routeTransition(
+              child: node.builder(context, child),
+              state: state,
+              transition: node.transition,
+              gesturePopEnabled: node.gesturePopEnabled,
+            ),
             routes: [
               if (firstLeaf != null)
                 GoRoute(
                   path: '/$controllerName',
                   name: controllerName,
-                  pageBuilder: (context, state) => _routeTransition(
-                    child: const SizedBox.shrink(),
-                    state: state,
-                    transition: node.transition,
-                    gesturePopEnabled: node.gesturePopEnabled,
-                  ),
                   redirect: (ctx, state) => '/${firstLeaf.toSnakeCase()}',
                 ),
               ..._flatten(node.routes, activeRedirect: activeRedirect),

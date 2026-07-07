@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.4
+
+- Fix controller shell transition: `ShellRoute` for controller nodes now uses `pageBuilder` (returning `_routeTransition` with the node's `transition` and `gesturePopEnabled`) instead of `builder`, so the transition is applied at the shell level rather than only on the inner redirect GoRoute that was never rendered. This fixes the visible animation when switching between controllers (e.g. store → brands) even when `RouteTransition.none` was set.
+
 ## 1.3.3
 
 - Add `transition` and `gesturePopEnabled` parameters to `FiberRouteNode.controller()` — controls the page transition and gesture behavior of the controller's entry route. Defaults to `RouteTransition.none` and `gesturePopEnabled: false`.
