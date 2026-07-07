@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.2
+
+- Fix import
+
 ## 1.3.1
 
 - Make `builder` optional on `FiberRouteNode.controller()` — defaults to `(context, child) => ControllerView(child: child)` when omitted.
