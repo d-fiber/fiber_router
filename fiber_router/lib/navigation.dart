@@ -37,6 +37,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import 'controller.dart';
+
 extension FiberRouterExtension on BuildContext {
   void go<T extends Widget, P extends Object?>({P? queryParameters, bool replace = false}) {
     final name = T.toString().toSnakeCase();
