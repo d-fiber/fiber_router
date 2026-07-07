@@ -213,7 +213,7 @@ RouterControllerNode? _parseControllerNode(MethodInvocation expr) {
   final explicitName = nameExpr is StringLiteral ? nameExpr.stringValue : null;
 
   final builderExpr = _namedArg(expr.argumentList, 'builder');
-  final builderWidgetType = _extractShellWidgetType(builderExpr) ?? 'Controller';
+  final builderWidgetType = _extractShellWidgetType(builderExpr) ?? 'ControllerView';
 
   return RouterControllerNode(explicitName: explicitName, builderWidgetType: builderWidgetType, children: children);
 }

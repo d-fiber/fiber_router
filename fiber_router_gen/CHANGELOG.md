@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.3
+
+- Fix controller builder type fallback: `_parseControllerNode` now defaults to `'ControllerView'` instead of `'Controller'` when no `builder` argument is present, producing `ControllerRouter<ControllerView>` in the generated output.
+
 ## 1.4.2
 
 - Fix controller navigation when an explicit `name` is provided: generated `ControllerRouter` now calls `_context.goShellNamed(routeName)` instead of `_context.goShell<T, Null>()`, so the correct registered route name is used rather than the builder widget type snake-cased from `T.toString()`.
