@@ -64,9 +64,13 @@ extension FiberRouterExtension on BuildContext {
     Router.neglect(this, () => pushReplacementNamed(name, queryParameters: query, extra: queryParameters));
   }
 
-  void goShellNamed(String routeName) {
+  void goShellNamed(String routeName, {bool replace = false}) {
     final query = <String, String>{'_id': DateTime.now().microsecondsSinceEpoch.toString()};
-    Router.neglect(this, () => pushReplacementNamed(routeName, queryParameters: query));
+    if (replace) {
+      Router.neglect(this, () => pushReplacementNamed(routeName, queryParameters: query));
+    } else {
+      pushNamed(routeName, queryParameters: query);
+    }
   }
 }
 

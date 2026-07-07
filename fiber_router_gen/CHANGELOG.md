@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.4
+
+- `ControllerRouter<T>` now takes `void Function(bool)` and exposes `go({bool replace = false})` — matches the `GoRouter` API, allows push or replace navigation. `ControllerRouterParams` updated similarly.
+- Generated `controller` getter passes `(r) => _context.goShellNamed(routeName, replace: r)` to `ControllerRouter`. `ShellRouter` is unchanged.
+
 ## 1.4.3
 
 - Fix controller builder type fallback: `_parseControllerNode` now defaults to `'ControllerView'` instead of `'Controller'` when no `builder` argument is present, producing `ControllerRouter<ControllerView>` in the generated output.

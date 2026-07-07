@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.5
+
+- Add `replace` parameter to `goShellNamed(routeName, {bool replace = false})` — `replace: true` uses `pushReplacementNamed` (no back navigation), `replace: false` (default) uses `pushNamed` (stackable). Only affects controller navigation; `goShell` for shell routes is unchanged.
+
 ## 1.3.4
 
 - Fix controller shell transition: `ShellRoute` for controller nodes now uses `pageBuilder` (returning `_routeTransition` with the node's `transition` and `gesturePopEnabled`) instead of `builder`, so the transition is applied at the shell level rather than only on the inner redirect GoRoute that was never rendered. This fixes the visible animation when switching between controllers (e.g. store → brands) even when `RouteTransition.none` was set.

@@ -122,7 +122,7 @@ void _writeControllerGo(StringBuffer buf, String widgetType, String routeName, {
   final routeNameLiteral = "'$routeName'";
   buf.writeln(
     '${indent}ControllerRouter<$widgetType> get controller => '
-    'ControllerRouter<$widgetType>(() => _context.goShellNamed($routeNameLiteral), $routeNameLiteral);',
+    'ControllerRouter<$widgetType>((r) => _context.goShellNamed($routeNameLiteral, replace: r), $routeNameLiteral);',
   );
   buf.writeln("${indent}String get name => $routeNameLiteral;");
 }
@@ -258,16 +258,16 @@ void _writeGoRouterClasses(StringBuffer buf) {
   buf.writeln();
 
   buf.writeln('class ControllerRouter<T> extends FiberRouterBase<T> {');
-  buf.writeln('  final void Function() _onNavigate;');
+  buf.writeln('  final void Function(bool) _onNavigate;');
   buf.writeln('  ControllerRouter(this._onNavigate, super.name);');
-  buf.writeln('  void go() => _onNavigate();');
+  buf.writeln('  void go({bool replace = false}) => _onNavigate(replace);');
   buf.writeln('}');
   buf.writeln();
 
   buf.writeln('class ControllerRouterParams<T, P extends Object?> extends FiberRouterBase<T> {');
-  buf.writeln('  final void Function(P) _onNavigate;');
+  buf.writeln('  final void Function(P, bool) _onNavigate;');
   buf.writeln('  ControllerRouterParams(this._onNavigate, super.name);');
-  buf.writeln('  void go(P params) => _onNavigate(params);');
+  buf.writeln('  void go(P params, {bool replace = false}) => _onNavigate(params, replace);');
   buf.writeln('}');
   buf.writeln();
 }
