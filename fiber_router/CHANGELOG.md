@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.6
+
+- Add `replace` parameter to `goShell` (`{bool replace = true}`) — `true` uses `pushReplacementNamed` (default, preserves existing shell behavior), `false` uses `pushNamed` for stackable shell navigation.
+
 ## 1.3.5
 
 - Add `replace` parameter to `goShellNamed(routeName, {bool replace = false})` — `replace: true` uses `pushReplacementNamed` (no back navigation), `replace: false` (default) uses `pushNamed` (stackable). Only affects controller navigation; `goShell` for shell routes is unchanged.

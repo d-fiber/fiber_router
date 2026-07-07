@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.5
+
+- `ShellRouter<T>` now takes `void Function(bool)` and exposes `go({bool replace = true})` — defaults to replace to preserve existing shell behavior. `ShellRouterParams` updated similarly.
+- Generated shell getters pass `(r) => _context.goShell<T, P>(replace: r)`.
+
 ## 1.4.4
 
 - `ControllerRouter<T>` now takes `void Function(bool)` and exposes `go({bool replace = false})` — matches the `GoRouter` API, allows push or replace navigation. `ControllerRouterParams` updated similarly.

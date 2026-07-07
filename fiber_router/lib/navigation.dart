@@ -55,13 +55,17 @@ extension FiberRouterExtension on BuildContext {
     }
   }
 
-  void goShell<T extends Widget, P extends Object?>({P? queryParameters}) {
+  void goShell<T extends Widget, P extends Object?>({P? queryParameters, bool replace = true}) {
     final name = T.toString().toSnakeCase();
     final query = <String, String>{
       if (queryParameters is FiberParameters) ...queryParameters.toQuery(),
       '_id': DateTime.now().microsecondsSinceEpoch.toString(),
     };
-    Router.neglect(this, () => pushReplacementNamed(name, queryParameters: query, extra: queryParameters));
+    if (replace) {
+      Router.neglect(this, () => pushReplacementNamed(name, queryParameters: query, extra: queryParameters));
+    } else {
+      pushNamed(name, queryParameters: query, extra: queryParameters);
+    }
   }
 
   void goShellNamed(String routeName, {bool replace = false}) {

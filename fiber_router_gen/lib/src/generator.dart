@@ -149,12 +149,12 @@ void _writeViewGetter(StringBuffer buf, RouterViewNode node, {required String in
     if (node.hasParams) {
       buf.writeln(
         '${indent}ShellRouterParams<${node.widgetType}, ${node.paramsType}> get $getterName => '
-        'ShellRouterParams<${node.widgetType}, ${node.paramsType}>((params) => _context.goShell<${node.widgetType}, ${node.paramsType}>(queryParameters: params), $routeName);',
+        'ShellRouterParams<${node.widgetType}, ${node.paramsType}>((params, r) => _context.goShell<${node.widgetType}, ${node.paramsType}>(queryParameters: params, replace: r), $routeName);',
       );
     } else {
       buf.writeln(
         '${indent}ShellRouter<${node.widgetType}> get $getterName => '
-        'ShellRouter<${node.widgetType}>(() => _context.goShell<${node.widgetType}, Null>(), $routeName);',
+        'ShellRouter<${node.widgetType}>((r) => _context.goShell<${node.widgetType}, Null>(replace: r), $routeName);',
       );
     }
   } else {
@@ -244,16 +244,16 @@ void _writeGoRouterClasses(StringBuffer buf) {
   buf.writeln();
 
   buf.writeln('class ShellRouter<T> extends FiberRouterBase<T> {');
-  buf.writeln('  final void Function() _onNavigate;');
+  buf.writeln('  final void Function(bool) _onNavigate;');
   buf.writeln('  ShellRouter(this._onNavigate, super.name);');
-  buf.writeln('  void go() => _onNavigate();');
+  buf.writeln('  void go({bool replace = true}) => _onNavigate(replace);');
   buf.writeln('}');
   buf.writeln();
 
   buf.writeln('class ShellRouterParams<T, P extends Object?> extends FiberRouterBase<T> {');
-  buf.writeln('  final void Function(P) _onNavigate;');
+  buf.writeln('  final void Function(P, bool) _onNavigate;');
   buf.writeln('  ShellRouterParams(this._onNavigate, super.name);');
-  buf.writeln('  void go(P params) => _onNavigate(params);');
+  buf.writeln('  void go(P params, {bool replace = true}) => _onNavigate(params, replace);');
   buf.writeln('}');
   buf.writeln();
 
