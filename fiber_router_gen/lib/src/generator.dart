@@ -74,6 +74,7 @@ void _writeClass(
   RouterViewNode? main,
   bool isShell = false,
   String? controllerWidgetType,
+  String? controllerRouteName,
 }) {
   buf.writeln('class $className {');
   buf.writeln('  final BuildContext _context;');
@@ -86,8 +87,8 @@ void _writeClass(
     buf.writeln();
   }
 
-  if (controllerWidgetType != null) {
-    _writeControllerGo(buf, controllerWidgetType, indent: '  ');
+  if (controllerWidgetType != null && controllerRouteName != null) {
+    _writeControllerGo(buf, controllerWidgetType, controllerRouteName, indent: '  ');
     buf.writeln();
   }
 
@@ -117,13 +118,13 @@ void _writeMember(StringBuffer buf, RouterNode node, {bool isShell = false}) {
   }
 }
 
-void _writeControllerGo(StringBuffer buf, String widgetType, {required String indent}) {
-  final routeName = "'${widgetType.toSnakeCase()}'";
+void _writeControllerGo(StringBuffer buf, String widgetType, String routeName, {required String indent}) {
+  final routeNameLiteral = "'$routeName'";
   buf.writeln(
     '${indent}ControllerRouter<$widgetType> get controller => '
-    'ControllerRouter<$widgetType>(() => _context.goShell<$widgetType, Null>(), $routeName);',
+    'ControllerRouter<$widgetType>(() => _context.goShellNamed($routeNameLiteral), $routeNameLiteral);',
   );
-  buf.writeln("${indent}String get name => $routeName;");
+  buf.writeln("${indent}String get name => $routeNameLiteral;");
 }
 
 void _writeViewGo(StringBuffer buf, RouterViewNode node, {required String indent}) {
@@ -178,12 +179,14 @@ void _writeGroupClasses(StringBuffer buf, List<RouterNode> nodes) {
       _writeClass(buf, _groupClassName(node.effectiveGroupName), node.children, isShell: true);
       _writeGroupClasses(buf, node.children);
     } else if (node is RouterControllerNode) {
+      final routeName = node.explicitName ?? node.builderWidgetType.toSnakeCase();
       _writeClass(
         buf,
         _groupClassName(node.effectiveGroupName),
         node.children,
         isShell: true,
         controllerWidgetType: node.builderWidgetType,
+        controllerRouteName: routeName,
       );
       _writeGroupClasses(buf, node.children);
     } else if (node is RouterGroupNode) {

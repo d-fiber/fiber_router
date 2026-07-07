@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1
+
+- Make `builder` optional on `FiberRouteNode.controller()` — defaults to `(context, child) => ControllerView(child: child)` when omitted.
+- Add `BuildContext.goShellNamed(String routeName)` — navigates by explicit route name rather than deriving it from `T.toString()`, fixing controller navigation when an explicit `name` override is provided.
+
 ## 1.3.0
 
 - No runtime changes — version bump to stay in sync with `fiber_router_gen 1.4.0`.

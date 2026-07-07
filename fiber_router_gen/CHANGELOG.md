@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.2
+
+- Fix controller navigation when an explicit `name` is provided: generated `ControllerRouter` now calls `_context.goShellNamed(routeName)` instead of `_context.goShell<T, Null>()`, so the correct registered route name is used rather than the builder widget type snake-cased from `T.toString()`.
+
 ## 1.4.1
 
 - Fix missing import for controller builder widget types (e.g. `DashboardView`): `_allControllerBuilderTypes` now collects builder widget types from all `RouterControllerNode` instances and adds them to `neededTypes`, so their import files are emitted in the generated output.

@@ -61,6 +61,11 @@ extension FiberRouterExtension on BuildContext {
     };
     Router.neglect(this, () => pushReplacementNamed(name, queryParameters: query, extra: queryParameters));
   }
+
+  void goShellNamed(String routeName) {
+    final query = <String, String>{'_id': DateTime.now().microsecondsSinceEpoch.toString()};
+    Router.neglect(this, () => pushReplacementNamed(routeName, queryParameters: query));
+  }
 }
 
 abstract interface class FiberParameters {
@@ -211,9 +216,13 @@ sealed class FiberRouteNode {
 
   static FiberRouteNode controller<T extends Widget>({
     String? name,
-    required Widget Function(BuildContext context, Widget child) builder,
+    Widget Function(BuildContext context, Widget child)? builder,
     required List<FiberRouteNode> routes,
-  }) => _FiberControllerRouteNode<T>(name: name, builder: builder, routes: routes);
+  }) => _FiberControllerRouteNode<T>(
+    name: name,
+    builder: builder ?? (context, child) => ControllerView(child: child),
+    routes: routes,
+  );
 }
 
 final class _FiberViewRouteNode<T extends Widget, P extends Object?> extends FiberRouteNode {
