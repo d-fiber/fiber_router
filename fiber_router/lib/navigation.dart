@@ -113,6 +113,12 @@ class FiberRouter {
                 GoRoute(
                   path: '/$controllerName',
                   name: controllerName,
+                  pageBuilder: (context, state) => _routeTransition(
+                    child: const SizedBox.shrink(),
+                    state: state,
+                    transition: node.transition,
+                    gesturePopEnabled: node.gesturePopEnabled,
+                  ),
                   redirect: (ctx, state) => '/${firstLeaf.toSnakeCase()}',
                 ),
               ..._flatten(node.routes, activeRedirect: activeRedirect),
@@ -218,10 +224,14 @@ sealed class FiberRouteNode {
 
   static FiberRouteNode controller<T extends Widget>({
     String? name,
+    RouteTransition transition = RouteTransition.none,
+    bool gesturePopEnabled = false,
     Widget Function(BuildContext context, Widget child)? builder,
     required List<FiberRouteNode> routes,
   }) => _FiberControllerRouteNode<T>(
     name: name,
+    transition: transition,
+    gesturePopEnabled: gesturePopEnabled,
     builder: builder ?? (context, child) => ControllerView(child: child),
     routes: routes,
   );
@@ -255,8 +265,16 @@ final class _FiberShellRouteNode extends FiberRouteNode {
 
 final class _FiberControllerRouteNode<T extends Widget> extends FiberRouteNode {
   final Widget Function(BuildContext, Widget) builder;
-  _FiberControllerRouteNode({String? name, required this.builder, required super.routes})
-    : super._(name: name ?? T.toString());
+  final RouteTransition transition;
+  final bool gesturePopEnabled;
+
+  _FiberControllerRouteNode({
+    String? name,
+    required this.builder,
+    required this.transition,
+    required this.gesturePopEnabled,
+    required super.routes,
+  }) : super._(name: name ?? T.toString());
 }
 
 final class _FiberBranchRouteNode extends FiberRouteNode {

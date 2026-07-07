@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.3
+
+- Add `transition` and `gesturePopEnabled` parameters to `FiberRouteNode.controller()` — controls the page transition and gesture behavior of the controller's entry route. Defaults to `RouteTransition.none` and `gesturePopEnabled: false`.
+
 ## 1.3.2
 
 - Fix import
