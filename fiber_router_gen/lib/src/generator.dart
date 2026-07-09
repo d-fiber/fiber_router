@@ -154,7 +154,7 @@ void _writeViewGetter(StringBuffer buf, RouterViewNode node, {required String in
     } else {
       buf.writeln(
         '${indent}ShellRouter<${node.widgetType}> get $getterName => '
-        'ShellRouter<${node.widgetType}>(_context, (r) => _context.goShell<${node.widgetType}, Null>(replace: r), $routeName);',
+        'ShellRouter<${node.widgetType}>(_context, $routeName);',
       );
     }
   } else {
@@ -230,46 +230,45 @@ void _writeGoRouterClasses(StringBuffer buf) {
   buf.writeln();
 
   buf.writeln('class GoRouter<T> extends FiberRouterBase<T> {');
-  buf.writeln('  final void Function(bool) _onNavigate;');
+  buf.writeln('  final Future<dynamic> Function(bool) _onNavigate;');
   buf.writeln('  GoRouter(this._onNavigate, super.name);');
-  buf.writeln('  void go({bool replace = false}) => _onNavigate(replace);');
+  buf.writeln('  Future<R?> go<R>({bool replace = false}) async => (await _onNavigate(replace)) as R?;');
   buf.writeln('}');
   buf.writeln();
 
   buf.writeln('class GoRouterParams<T, P extends Object?> extends FiberRouterBase<T> {');
-  buf.writeln('  final void Function(P, bool) _onNavigate;');
+  buf.writeln('  final Future<dynamic> Function(P, bool) _onNavigate;');
   buf.writeln('  GoRouterParams(this._onNavigate, super.name);');
-  buf.writeln('  void go(P params, {bool replace = false}) => _onNavigate(params, replace);');
+  buf.writeln('  Future<R?> go<R>(P params, {bool replace = false}) async => (await _onNavigate(params, replace)) as R?;');
   buf.writeln('}');
   buf.writeln();
 
   buf.writeln('class ShellRouter<T> extends FiberRouterBase<T> {');
   buf.writeln('  final BuildContext _context;');
-  buf.writeln('  final void Function(bool) _onNavigate;');
-  buf.writeln('  ShellRouter(this._context, this._onNavigate, super.name);');
-  buf.writeln('  void go({bool replace = true}) => _onNavigate(replace);');
+  buf.writeln('  ShellRouter(this._context, super.name);');
+  buf.writeln('  Future<R?> go<R>({bool replace = true}) => _context.goShellNamed<R>(name, replace: replace);');
   buf.writeln('  Future<R?> push<R>() => _context.goShellNamed<R>(name, replace: false);');
   buf.writeln('}');
   buf.writeln();
 
   buf.writeln('class ShellRouterParams<T, P extends Object?> extends FiberRouterBase<T> {');
-  buf.writeln('  final void Function(P, bool) _onNavigate;');
+  buf.writeln('  final Future<dynamic> Function(P, bool) _onNavigate;');
   buf.writeln('  ShellRouterParams(this._onNavigate, super.name);');
-  buf.writeln('  void go(P params, {bool replace = true}) => _onNavigate(params, replace);');
+  buf.writeln('  Future<R?> go<R>(P params, {bool replace = true}) async => (await _onNavigate(params, replace)) as R?;');
   buf.writeln('}');
   buf.writeln();
 
   buf.writeln('class ControllerRouter<T> extends FiberRouterBase<T> {');
-  buf.writeln('  final void Function(bool) _onNavigate;');
+  buf.writeln('  final Future<dynamic> Function(bool) _onNavigate;');
   buf.writeln('  ControllerRouter(this._onNavigate, super.name);');
-  buf.writeln('  void go({bool replace = false}) => _onNavigate(replace);');
+  buf.writeln('  Future<R?> go<R>({bool replace = false}) async => (await _onNavigate(replace)) as R?;');
   buf.writeln('}');
   buf.writeln();
 
   buf.writeln('class ControllerRouterParams<T, P extends Object?> extends FiberRouterBase<T> {');
-  buf.writeln('  final void Function(P, bool) _onNavigate;');
+  buf.writeln('  final Future<dynamic> Function(P, bool) _onNavigate;');
   buf.writeln('  ControllerRouterParams(this._onNavigate, super.name);');
-  buf.writeln('  void go(P params, {bool replace = false}) => _onNavigate(params, replace);');
+  buf.writeln('  Future<R?> go<R>(P params, {bool replace = false}) async => (await _onNavigate(params, replace)) as R?;');
   buf.writeln('}');
   buf.writeln();
 }

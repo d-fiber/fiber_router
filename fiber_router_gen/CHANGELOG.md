@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.7
+
+- All router helpers (`GoRouter`, `GoRouterParams`, `ShellRouter`, `ShellRouterParams`, `ControllerRouter`, `ControllerRouterParams`) now expose `Future<R?> go<R>(...)` instead of `void go(...)` — callers can await the result returned by `context.pop(result)` on the pushed route.
+- `_onNavigate` function types updated from `void Function(...)` to `Future<dynamic> Function(...)` to propagate the push result through the lambda.
+- `ShellRouter<T>` no longer stores `_onNavigate` — `go<R>()` and `push<R>()` both delegate directly to `_context.goShellNamed<R>(name, replace: ...)`. Generated shell getters simplified to `ShellRouter<T>(_context, 'route_name')`.
+
 ## 1.4.6
 
 - `ShellRouter<T>` now stores `BuildContext _context` and exposes `Future<R?> push<R>()` — calls `_context.goShellNamed<R>(name, replace: false)`, returning the value passed to `context.pop(result)` by the pushed route.
