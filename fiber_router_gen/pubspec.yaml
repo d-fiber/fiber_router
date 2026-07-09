@@ -2,7 +2,7 @@ name: fiber_router_gen
 description: >-
   Code generator for fiber_router - produces typed BuildContext navigation
   extensions from your PoppinRouter definition. Run once, navigate anywhere.
-version: 1.4.5
+version: 1.4.6
 homepage: https://github.com/d-fiber/fiber_router
 
 topics:

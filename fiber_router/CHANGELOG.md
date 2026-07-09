@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.7
+
+- `goShellNamed` is now generic — `Future<T?> goShellNamed<T>(String routeName, {bool replace = false})` — returning the value passed to `context.pop(result)` when `replace` is `false`. Returns `null` immediately when `replace` is `true` (replace navigation cannot carry a result).
+
 ## 1.3.6
 
 - Add `replace` parameter to `goShell` (`{bool replace = true}`) — `true` uses `pushReplacementNamed` (default, preserves existing shell behavior), `false` uses `pushNamed` for stackable shell navigation.

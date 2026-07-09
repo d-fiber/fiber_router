@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.6
+
+- `ShellRouter<T>` now stores `BuildContext _context` and exposes `Future<R?> push<R>()` — calls `_context.goShellNamed<R>(name, replace: false)`, returning the value passed to `context.pop(result)` by the pushed route.
+- Generated shell getters pass `_context` as the first constructor argument: `ShellRouter<T>(_context, (r) => ...)`.
+
 ## 1.4.5
 
 - `ShellRouter<T>` now takes `void Function(bool)` and exposes `go({bool replace = true})` — defaults to replace to preserve existing shell behavior. `ShellRouterParams` updated similarly.

@@ -154,7 +154,7 @@ void _writeViewGetter(StringBuffer buf, RouterViewNode node, {required String in
     } else {
       buf.writeln(
         '${indent}ShellRouter<${node.widgetType}> get $getterName => '
-        'ShellRouter<${node.widgetType}>((r) => _context.goShell<${node.widgetType}, Null>(replace: r), $routeName);',
+        'ShellRouter<${node.widgetType}>(_context, (r) => _context.goShell<${node.widgetType}, Null>(replace: r), $routeName);',
       );
     }
   } else {
@@ -244,9 +244,11 @@ void _writeGoRouterClasses(StringBuffer buf) {
   buf.writeln();
 
   buf.writeln('class ShellRouter<T> extends FiberRouterBase<T> {');
+  buf.writeln('  final BuildContext _context;');
   buf.writeln('  final void Function(bool) _onNavigate;');
-  buf.writeln('  ShellRouter(this._onNavigate, super.name);');
+  buf.writeln('  ShellRouter(this._context, this._onNavigate, super.name);');
   buf.writeln('  void go({bool replace = true}) => _onNavigate(replace);');
+  buf.writeln('  Future<R?> push<R>() => _context.goShellNamed<R>(name, replace: false);');
   buf.writeln('}');
   buf.writeln();
 

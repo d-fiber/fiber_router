@@ -40,7 +40,7 @@ import 'package:go_router/go_router.dart';
 import 'controller.dart';
 
 extension FiberRouterExtension on BuildContext {
-  void go<T extends Widget, P extends Object?>({P? queryParameters, bool replace = false}) {
+  Future<T?> go<T extends Widget, P extends Object?>({P? queryParameters, bool replace = false}) async {
     final name = T.toString().toSnakeCase();
 
     final query = <String, String>{
@@ -49,13 +49,14 @@ extension FiberRouterExtension on BuildContext {
     };
 
     if (!replace) {
-      pushNamed(name, queryParameters: query, extra: queryParameters);
+      return pushNamed(name, queryParameters: query, extra: queryParameters);
     } else {
       Router.neglect(this, () => pushReplacementNamed(name, queryParameters: query, extra: queryParameters));
+      return null;
     }
   }
 
-  void goShell<T extends Widget, P extends Object?>({P? queryParameters, bool replace = true}) {
+  Future<T?> goShell<T extends Widget, P extends Object?>({P? queryParameters, bool replace = true}) async {
     final name = T.toString().toSnakeCase();
     final query = <String, String>{
       if (queryParameters is FiberParameters) ...queryParameters.toQuery(),
@@ -63,17 +64,19 @@ extension FiberRouterExtension on BuildContext {
     };
     if (replace) {
       Router.neglect(this, () => pushReplacementNamed(name, queryParameters: query, extra: queryParameters));
+      return null;
     } else {
-      pushNamed(name, queryParameters: query, extra: queryParameters);
+      return pushNamed(name, queryParameters: query, extra: queryParameters);
     }
   }
 
-  void goShellNamed(String routeName, {bool replace = false}) {
+  Future<T?> goShellNamed<T>(String routeName, {bool replace = false}) async {
     final query = <String, String>{'_id': DateTime.now().microsecondsSinceEpoch.toString()};
     if (replace) {
       Router.neglect(this, () => pushReplacementNamed(routeName, queryParameters: query));
+      return null;
     } else {
-      pushNamed(routeName, queryParameters: query);
+      return pushNamed(routeName, queryParameters: query);
     }
   }
 }
