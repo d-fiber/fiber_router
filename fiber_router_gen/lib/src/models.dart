@@ -62,8 +62,14 @@ class RouterViewNode extends RouterNode {
   final String widgetType;
   final String paramsType;
   final bool isDeeplink;
+  final String? explicitName;
 
-  RouterViewNode({required this.widgetType, required this.paramsType, this.isDeeplink = false});
+  RouterViewNode({
+    required this.widgetType,
+    required this.paramsType,
+    this.isDeeplink = false,
+    this.explicitName,
+  });
 
   bool get hasParams => paramsType != 'Null';
 }

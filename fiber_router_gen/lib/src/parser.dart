@@ -95,9 +95,6 @@ List<String> filterImports(List<String> imports, Set<String> neededTypes, String
   }).toList();
 }
 
-// Recursively follows both relative and package: exports to detect `on BuildContext`.
-// This correctly includes packages like `ui` (which re-exports fiber_router → navigation.dart)
-// while excluding unrelated packages like `services` that have no BuildContext extensions.
 bool _fileContainsBuildContextExtension(String filePath, Map<String, String> packageConfig, [Set<String>? visited]) {
   visited ??= {};
   if (!visited.add(filePath)) return false;
@@ -209,8 +206,7 @@ RouterControllerNode? _parseControllerNode(MethodInvocation expr) {
   if (routesExpr == null || routesExpr is! ListLiteral) return null;
   final children = routesExpr.elements.whereType<Expression>().map(_parseNode).nonNulls.toList();
 
-  final nameExpr = _namedArg(expr.argumentList, 'name');
-  final explicitName = nameExpr is StringLiteral ? nameExpr.stringValue : null;
+  final explicitName = _optionalName(expr.argumentList);
 
   final builderExpr = _namedArg(expr.argumentList, 'builder');
   final builderWidgetType = _extractShellWidgetType(builderExpr) ?? 'ControllerView';
@@ -223,13 +219,19 @@ RouterShellNode? _parseShellNode(MethodInvocation expr) {
   if (routesExpr == null || routesExpr is! ListLiteral) return null;
   final children = routesExpr.elements.whereType<Expression>().map(_parseNode).nonNulls.toList();
 
-  final nameExpr = _namedArg(expr.argumentList, 'name');
-  final explicitName = nameExpr is StringLiteral ? nameExpr.stringValue : null;
+  final explicitName = _optionalName(expr.argumentList);
 
   final builderExpr = _namedArg(expr.argumentList, 'builder');
   final builderWidgetType = _extractShellWidgetType(builderExpr) ?? 'Shell';
 
   return RouterShellNode(explicitName: explicitName, builderWidgetType: builderWidgetType, children: children);
+}
+
+String? _optionalName(ArgumentList argList) {
+  final nameExpr = _namedArg(argList, 'name');
+  if (nameExpr is! StringLiteral) return null;
+  final value = nameExpr.stringValue;
+  return (value == null || value.trim().isEmpty) ? null : value;
 }
 
 String? _extractShellWidgetType(Expression? expr) {
@@ -274,7 +276,14 @@ RouterViewNode? _parseViewNode(MethodInvocation expr, {required bool isDeeplink}
   final typeArgs = expr.typeArguments?.arguments;
   if (typeArgs == null || typeArgs.length != 2) return null;
 
-  return RouterViewNode(widgetType: typeArgs[0].toString(), paramsType: typeArgs[1].toString(), isDeeplink: isDeeplink);
+  final explicitName = _optionalName(expr.argumentList);
+
+  return RouterViewNode(
+    widgetType: typeArgs[0].toString(),
+    paramsType: typeArgs[1].toString(),
+    isDeeplink: isDeeplink,
+    explicitName: explicitName,
+  );
 }
 
 Expression? _namedArg(ArgumentList argList, String argName) {

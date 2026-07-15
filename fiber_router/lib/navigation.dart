@@ -96,30 +96,64 @@ class FiberRouter {
     FutureOr<Widget?> Function(BuildContext, GoRouterState)? redirect,
     required List<FiberRouteNode> nodes,
     Listenable? refreshListenable,
-  }) => GoRouter(
-    initialLocation: "/${initialLocation.runtimeType.toString().toSnakeCase()}",
-    observers: [_fiberRouteObserver, ...?observers],
-    refreshListenable: refreshListenable,
-    redirect: (context, state) async {
-      final result = await redirect?.call(context, state);
-      if (result == null) return null;
-      return "/${result.runtimeType.toString().toSnakeCase()}";
-    },
-    debugLogDiagnostics: false,
-    routes: _flatten(nodes),
-  );
+  }) {
+    final controllerRouteNames = _collectControllerRouteNames(nodes);
+    String pathFor(Widget widget) => '/${_routeNameFor(widget, controllerRouteNames)}';
 
-  static List<RouteBase> _flatten(List<FiberRouteNode> nodes, {Widget? Function(BuildContext)? activeRedirect}) {
+    return GoRouter(
+      initialLocation: pathFor(initialLocation),
+      observers: [_fiberRouteObserver, ...?observers],
+      refreshListenable: refreshListenable,
+      redirect: (context, state) async {
+        final result = await redirect?.call(context, state);
+        if (result == null) return null;
+        return pathFor(result);
+      },
+      debugLogDiagnostics: false,
+      routes: _flatten(nodes, controllerRouteNames: controllerRouteNames),
+    );
+  }
+
+  static Map<Type, String> _collectControllerRouteNames(List<FiberRouteNode> nodes) {
+    final result = <Type, String>{};
+    void walk(List<FiberRouteNode> list, List<String> ancestorPath) {
+      for (final node in list) {
+        if (node is _FiberControllerRouteNode) {
+          final path = [...ancestorPath, node.name!.toSnakeCase()];
+          result[node.controllerWidgetType] = path.join('_');
+          walk(node.routes, path);
+        } else if (node is _FiberShellRouteNode || node is _FiberBranchRouteNode) {
+          walk(node.routes, [...ancestorPath, node.name!.toSnakeCase()]);
+        } else {
+          walk(node.routes, ancestorPath);
+        }
+      }
+    }
+
+    walk(nodes, const []);
+    return result;
+  }
+
+  static String _routeNameFor(Widget widget, Map<Type, String> controllerRouteNames) =>
+      controllerRouteNames[widget.runtimeType] ?? widget.runtimeType.toString().toSnakeCase();
+
+  static List<RouteBase> _flatten(
+    List<FiberRouteNode> nodes, {
+    required Map<Type, String> controllerRouteNames,
+    Widget? Function(BuildContext)? activeRedirect,
+    List<String> ancestorPath = const [],
+  }) {
     final routes = <RouteBase>[];
 
     for (final node in nodes) {
       if (node is _FiberControllerRouteNode) {
-        final controllerName = node.name!.toSnakeCase();
-        final firstLeaf = _firstLeafName(node.routes);
+        final path = [...ancestorPath, node.name!.toSnakeCase()];
+        final controllerName = path.join('_');
+        final firstLeaf = _firstLeafName(node.routes, path);
         routes.add(
           ShellRoute(
             pageBuilder: (context, state, child) => _routeTransition(
-              child: node.builder(context, child),
+              child: node.builder(context, child, state.extra),
               state: state,
               transition: node.transition,
               gesturePopEnabled: node.gesturePopEnabled,
@@ -131,19 +165,29 @@ class FiberRouter {
                   name: controllerName,
                   redirect: (ctx, state) => '/${firstLeaf.toSnakeCase()}',
                 ),
-              ..._flatten(node.routes, activeRedirect: activeRedirect),
+              ..._flatten(
+                node.routes,
+                controllerRouteNames: controllerRouteNames,
+                activeRedirect: activeRedirect,
+                ancestorPath: path,
+              ),
             ],
           ),
         );
         continue;
       }
       if (node is _FiberShellRouteNode) {
+        final path = [...ancestorPath, node.name!.toSnakeCase()];
         routes.add(
-          ShellRoute(builder: (context, state, child) => node.builder(context, child), routes: _flatten(node.routes)),
+          ShellRoute(
+            builder: (context, state, child) => node.builder(context, child, state.extra),
+            routes: _flatten(node.routes, controllerRouteNames: controllerRouteNames, ancestorPath: path),
+          ),
         );
         continue;
       }
       if (node is _FiberBranchRouteNode) {
+        final path = [...ancestorPath, node.name!.toSnakeCase()];
         final redirect = node.redirect ?? activeRedirect;
         final main = node.main;
         if (main != null) {
@@ -158,12 +202,19 @@ class FiberRouter {
                   : (ctx, _) {
                       final result = redirect(ctx);
                       if (result == null) return null;
-                      return "/${result.runtimeType.toString().toSnakeCase()}";
+                      return '/${_routeNameFor(result, controllerRouteNames)}';
                     },
             ),
           );
         }
-        routes.addAll(_flatten(node.routes, activeRedirect: redirect));
+        routes.addAll(
+          _flatten(
+            node.routes,
+            controllerRouteNames: controllerRouteNames,
+            activeRedirect: redirect,
+            ancestorPath: path,
+          ),
+        );
       } else {
         final name = node.name?.toSnakeCase();
         if (name != null && node.pageBuilder != null) {
@@ -177,12 +228,19 @@ class FiberRouter {
                   : (ctx, _) {
                       final result = activeRedirect(ctx);
                       if (result == null) return null;
-                      return "/${result.runtimeType.toString().toSnakeCase()}";
+                      return '/${_routeNameFor(result, controllerRouteNames)}';
                     },
             ),
           );
         }
-        routes.addAll(_flatten(node.routes, activeRedirect: activeRedirect));
+        routes.addAll(
+          _flatten(
+            node.routes,
+            controllerRouteNames: controllerRouteNames,
+            activeRedirect: activeRedirect,
+            ancestorPath: ancestorPath,
+          ),
+        );
       }
     }
     return routes;
@@ -196,7 +254,10 @@ sealed class FiberRouteNode {
 
   const FiberRouteNode._({this.name, this.pageBuilder, this.routes = const []});
 
+  Type? get controllerWidgetType => null;
+
   static FiberRouteNode view<T extends Widget, P extends Object?>({
+    required String name,
     RouteTransition transition = RouteTransition.system,
     bool gesturePopEnabled = true,
     required Widget Function(BuildContext, P?) builder,
@@ -208,6 +269,7 @@ sealed class FiberRouteNode {
   );
 
   static FiberRouteNode deeplink<T extends Widget, P extends FiberParameters>({
+    required String name,
     RouteTransition transition = RouteTransition.system,
     bool gesturePopEnabled = true,
     required P Function(Map<String, String>) fromQuery,
@@ -227,22 +289,22 @@ sealed class FiberRouteNode {
   }) = _FiberBranchRouteNode;
 
   static FiberRouteNode shell({
-    String? name,
-    required Widget Function(BuildContext context, Widget child) builder,
+    required String name,
+    required Widget Function(BuildContext context, Widget child, [Object? extra]) builder,
     required List<FiberRouteNode> routes,
   }) => _FiberShellRouteNode(name: name, builder: builder, routes: routes);
 
   static FiberRouteNode controller<T extends Widget>({
-    String? name,
+    required String name,
     RouteTransition transition = RouteTransition.none,
     bool gesturePopEnabled = false,
-    Widget Function(BuildContext context, Widget child)? builder,
+    Widget Function(BuildContext context, Widget child, [Object? extra])? builder,
     required List<FiberRouteNode> routes,
   }) => _FiberControllerRouteNode<T>(
     name: name,
     transition: transition,
     gesturePopEnabled: gesturePopEnabled,
-    builder: builder ?? (context, child) => ControllerView(child: child),
+    builder: builder ?? (context, child, [extra]) => ControllerView(child: child),
     routes: routes,
   );
 }
@@ -269,22 +331,25 @@ final class _FiberViewRouteNode<T extends Widget, P extends Object?> extends Fib
 }
 
 final class _FiberShellRouteNode extends FiberRouteNode {
-  final Widget Function(BuildContext, Widget) builder;
+  final Widget Function(BuildContext, Widget, [Object? extra]) builder;
   _FiberShellRouteNode({super.name, required this.builder, required super.routes}) : super._();
 }
 
 final class _FiberControllerRouteNode<T extends Widget> extends FiberRouteNode {
-  final Widget Function(BuildContext, Widget) builder;
+  final Widget Function(BuildContext, Widget, [Object? extra]) builder;
   final RouteTransition transition;
   final bool gesturePopEnabled;
 
   _FiberControllerRouteNode({
-    String? name,
+    required String name,
     required this.builder,
     required this.transition,
     required this.gesturePopEnabled,
     required super.routes,
-  }) : super._(name: name ?? T.toString());
+  }) : super._(name: name);
+
+  @override
+  Type get controllerWidgetType => T;
 }
 
 final class _FiberBranchRouteNode extends FiberRouteNode {
@@ -293,17 +358,19 @@ final class _FiberBranchRouteNode extends FiberRouteNode {
   const _FiberBranchRouteNode({required super.name, this.main, this.redirect, required super.routes}) : super._();
 }
 
-String? _firstLeafName(List<FiberRouteNode> nodes) {
+String? _firstLeafName(List<FiberRouteNode> nodes, List<String> ancestorPath) {
   for (final node in nodes) {
     if (node is _FiberViewRouteNode) return node.name;
     if (node is _FiberShellRouteNode) {
-      final found = _firstLeafName(node.routes);
+      final path = [...ancestorPath, node.name!.toSnakeCase()];
+      final found = _firstLeafName(node.routes, path);
       if (found != null) return found;
     }
-    if (node is _FiberControllerRouteNode) return node.name;
+    if (node is _FiberControllerRouteNode) return [...ancestorPath, node.name!.toSnakeCase()].join('_');
     if (node is _FiberBranchRouteNode) {
       if (node.main?.name != null) return node.main!.name;
-      final found = _firstLeafName(node.routes);
+      final path = [...ancestorPath, node.name!.toSnakeCase()];
+      final found = _firstLeafName(node.routes, path);
       if (found != null) return found;
     }
   }

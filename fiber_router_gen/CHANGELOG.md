@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.0
+
+- Every shell/controller/group node gets a short generated class name by default, derived from its own `name` (e.g. `store` instead of `storeController`, `pagination` instead of some builder-derived name). When that short class name collides with another node's elsewhere in the tree (e.g. both `store` and `brand` have a shell named `"pagination"`), every colliding node is instead qualified with its full ancestor path from the root down to itself (e.g. `ContextRouterDashboardStorePagination` / `ContextRouterDashboardBrandPagination`) — this only changes the generated *class* name, never the getter used to reach it, so call sites stay short (`store.pagination...`, `brand.pagination...`). If a collision still can't be resolved this way (e.g. two nodes with the exact same name at the exact same tree position), generation fails with a clear error instead of emitting duplicate classes.
+- Every `shell` always gets its own generated class now, regardless of how many shells its parent `controller` has — the generated class structure mirrors the `router.dart` node tree exactly, with no implicit merging. (An earlier draft of this release auto-merged a controller's sole shell child into the controller's own class; that was reverted for consistency — a controller with one shell no longer behaves differently from one with several.)
+- `FiberRouteNode.view()` and `.deeplink()` now accept the new, required `name` parameter (see `fiber_router` 1.3.8) to override the generated getter name.
+- Controller nodes now expose `Future<R?> go<R>({bool replace})` directly on their own class instead of via a nested `.controller` getter (`context.router.x.go()` instead of `context.router.x.controller.go()`). It's only generated when the controller's first leaf view takes no required parameters — otherwise `go()` would silently redirect there with missing/null params, so it's omitted instead.
+- Removed `push()` and the `name` getter from the controller's self-navigation block — only `go()` is generated now.
+- Removed the now-unused `ControllerRouter<T>` and `ControllerRouterParams<T, P>` generated helper classes.
+- Fix: a blank `name: ""` is now treated the same as an omitted name. Previously it was taken literally and could produce a duplicate, invalid `ContextRouter` class with a broken empty-named getter.
+- `bin/fiber_router_gen`: stopped collecting controller builder widget types for import filtering — they're no longer referenced as types in the generated output, and doing so could produce unused-import warnings (e.g. for the dashboard's builder widget).
+- Controller nodes now expose `go(params)` (instead of nothing) even when the first leaf view they'd redirect to requires params — it forwards straight to that leaf's own generated getter (e.g. `detail.go(params)` calls `detail.general.go(params)` under the hood), so callers no longer need to know or name the first leaf directly.
+- The literal string passed to `_context.goShellNamed(...)` inside a generated controller's `go()`/delegated `go(params)` now matches `fiber_router`'s new ancestor-path-qualified route name (see `fiber_router` 1.3.8) instead of the controller's bare `name` — required to stay in sync now that the real registered route name is qualified.
+
 ## 1.4.7
 
 - All router helpers (`GoRouter`, `GoRouterParams`, `ShellRouter`, `ShellRouterParams`, `ControllerRouter`, `ControllerRouterParams`) now expose `Future<R?> go<R>(...)` instead of `void go(...)` — callers can await the result returned by `context.pop(result)` on the pushed route.

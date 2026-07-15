@@ -2,7 +2,7 @@ name: fiber_router
 description: >-
   Typed navigation layer built on go_router declarative view, node, and shell
   routes with fade transitions and code-generated BuildContext extensions.
-version: 1.3.7
+version: 1.3.8
 homepage: https://github.com/d-fiber/fiber_router
 
 topics:
